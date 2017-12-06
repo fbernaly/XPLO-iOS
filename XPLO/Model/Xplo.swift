@@ -52,7 +52,15 @@ class Capture : NSObject {
   private(set) var depthDataDeliveryMode: DepthDataDeliveryMode = .off
   var isSessionRunning: Bool { return self.session.isRunning }
   var isCapturingPhoto: Bool { return self.capturingPhotoCount > 0 }
-  var canToggleCamera: Bool { return self.videoDeviceDiscoverySession.uniqueDevicePositionsCount > 1 }
+  var canToggleCamera: Bool {
+    var uniqueDevicePositions: [AVCaptureDevice.Position] = []
+    for device in self.videoDeviceDiscoverySession.devices {
+      if !uniqueDevicePositions.contains(device.position) {
+        uniqueDevicePositions.append(device.position)
+      }
+    }
+    return uniqueDevicePositions.count > 1
+  }
   
   private var capturingPhotoCount: Int = 0
   private var backgroundRecordingID: UIBackgroundTaskIdentifier?
@@ -746,23 +754,6 @@ extension Capture: AVCaptureFileOutputRecordingDelegate {
     } else {
       cleanUp()
     }
-  }
-  
-}
-
-// MARK: - AVCaptureDevice.DiscoverySession
-
-private extension AVCaptureDevice.DiscoverySession {
-  
-  var uniqueDevicePositionsCount: Int {
-    var uniqueDevicePositions: [AVCaptureDevice.Position] = []
-    
-    for device in devices {
-      if !uniqueDevicePositions.contains(device.position) {
-        uniqueDevicePositions.append(device.position)
-      }
-    }
-    return uniqueDevicePositions.count
   }
   
 }
