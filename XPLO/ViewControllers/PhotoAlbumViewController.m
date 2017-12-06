@@ -25,6 +25,7 @@
 @property (nonatomic, strong) WMRenderer *renderer;
 @property (nonatomic, strong) CMMotionManager *motionManager;
 @property (nonatomic, assign) BOOL requestPhotoLibrary;
+@property (nonatomic, assign) BOOL isPhotoSelected;
 @property (nonatomic, strong) NSTimer *updateTimer;
 @property (nonatomic, assign) BOOL useGyroscope;
 @property (nonatomic, assign) float effectRotation;
@@ -48,6 +49,7 @@ static const float kEffectMagnificationRangeMin = 0.0f;
 static const float kEffectMagnificationRangeMax = 30.0f;
 
 - (void)viewDidLoad {
+  _isPhotoSelected = NO;
   _requestPhotoLibrary = YES;
   _useGyroscope = NO;
   _effectRotation = 0.0f;
@@ -89,6 +91,7 @@ static const float kEffectMagnificationRangeMax = 30.0f;
 - (void)viewDidAppear:(BOOL)animated {
   if (_requestPhotoLibrary) {
     [self _selectPhotoFromLibrary];
+    _requestPhotoLibrary = NO;
   }
 }
 
@@ -268,6 +271,9 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info {
                                                  
                                                  AVDepthData *depthData = [WMUtilities depthDataFromImageData:imageData];
                                                  if ( !depthData ) {
+                                                   if (!_isPhotoSelected) {
+                                                     [self dismissViewControllerAnimated:YES completion:NULL];
+                                                   }
                                                    return;
                                                  }
                                                  
@@ -287,13 +293,16 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info {
                                                                                intrinsicMatrixReferenceDimensions:intrinsicMatrixReferenceDimensions];
                                                                                            [_renderer setTexture:image];
                                                                                            
-                                                                                           _requestPhotoLibrary = NO;
+                                                                                           _isPhotoSelected = YES;
                                                                                          }];
                                                }];
 }
 
 -(void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
   [picker dismissViewControllerAnimated:YES completion:NULL];
+  if (!_isPhotoSelected) {
+    [self dismissViewControllerAnimated:YES completion:NULL];
+  }
 }
 
 #pragma mark Private Methods

@@ -404,13 +404,13 @@ class Capture : NSObject {
     switch captureMode {
     case .photo:
       sessionQueue.async {
-        /*
-         Remove the AVCaptureMovieFileOutput from the session because movie recording is
-         not supported with AVCaptureSession.Preset.Photo. Additionally, Live Photo
-         capture is not supported when an AVCaptureMovieFileOutput is connected to the session.
-         */
         self.session.beginConfiguration()
         if let movieFileOutput = self.movieFileOutput {
+          /*
+           Remove the AVCaptureMovieFileOutput from the session because movie recording is
+           not supported with AVCaptureSession.Preset.Photo. Additionally, Live Photo
+           capture is not supported when an AVCaptureMovieFileOutput is connected to the session.
+           */
           self.session.removeOutput(movieFileOutput)
         }
         self.session.sessionPreset = .photo
@@ -577,8 +577,10 @@ class Capture : NSObject {
       
       if self.depthDataDeliveryMode == .on && self.photoOutput.isDepthDataDeliverySupported {
         photoSettings.isDepthDataDeliveryEnabled = true
+        photoSettings.embedsDepthDataInPhoto = true
       } else {
         photoSettings.isDepthDataDeliveryEnabled = false
+        photoSettings.embedsDepthDataInPhoto = false
       }
       
       // Use a separate object for the photo capture delegate to isolate each capture life cycle.

@@ -13,6 +13,7 @@ class CameraViewController: UIViewController {
   @IBOutlet weak var previewView: PreviewView!
   @IBOutlet weak var cameraUnavailableLabel: UILabel!
   @IBOutlet weak var capturingLivePhotoLabel: UILabel!
+  @IBOutlet weak var albumButton: UIButton!
   @IBOutlet weak var photoButton: UIButton!
   @IBOutlet weak var cameraButton: UIButton!
   @IBOutlet weak var recordButton: UIButton!
@@ -29,6 +30,7 @@ class CameraViewController: UIViewController {
     super.viewDidLoad()
     
     // Disable UI. The UI is enabled if and only if the session starts running.
+    albumButton.isEnabled = false
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
     recordButton.isHidden = true
@@ -116,6 +118,7 @@ class CameraViewController: UIViewController {
       let isDepthDeliveryDataEnabled = self.xplo.photoOutput.isDepthDataDeliveryEnabled
       
       // Only enable the ability to change camera if the device has more than one camera.
+      self.albumButton.isEnabled = isSessionRunning
       self.cameraButton.isEnabled = isSessionRunning && self.xplo.canToggleCamera
       self.recordButton.isEnabled = isSessionRunning && self.xplo.movieFileOutput != nil
       self.photoButton.isEnabled = isSessionRunning
@@ -182,7 +185,8 @@ class CameraViewController: UIViewController {
         self.recordButton.isHidden = true
         
       case .movie:
-        self.depthDataDeliveryButton.isHidden = true
+        self.depthDataDeliveryButton.isHidden = !self.xplo.photoOutput.isDepthDataDeliverySupported
+        self.depthDataDeliveryButton.isEnabled = self.xplo.photoOutput.isDepthDataDeliveryEnabled
         self.livePhotoModeButton.isHidden = true
         self.recordButton.isHidden = false
         self.recordButton.isEnabled = self.xplo.movieFileOutput != nil
@@ -191,12 +195,14 @@ class CameraViewController: UIViewController {
   }
   
   @IBAction func toggleCamera(_ sender: UIButton) {
+    albumButton.isEnabled = false
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
     photoButton.isEnabled = false
     livePhotoModeButton.isEnabled = false
     captureModeControl.isEnabled = false
     xplo.toggleCamera() {
+      self.albumButton.isEnabled = true
       self.cameraButton.isEnabled = true
       self.recordButton.isHidden = self.xplo.captureMode != .movie
       self.recordButton.isEnabled = self.xplo.movieFileOutput != nil
