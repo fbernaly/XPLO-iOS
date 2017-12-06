@@ -161,11 +161,10 @@ class Capture : NSObject {
   func rotate() {
     if let videoPreviewLayerConnection = previewView?.videoPreviewLayer.connection {
       let deviceOrientation = UIDevice.current.orientation
-      guard let newVideoOrientation = AVCaptureVideoOrientation(deviceOrientation: deviceOrientation),
-        deviceOrientation.isPortrait || deviceOrientation.isLandscape else {
-          return
+      guard let videoOrientation = AVCaptureVideoOrientation(rawValue: deviceOrientation.rawValue) else {
+        return
       }
-      videoPreviewLayerConnection.videoOrientation = newVideoOrientation
+      videoPreviewLayerConnection.videoOrientation = videoOrientation
     }
   }
   
@@ -223,14 +222,8 @@ class Capture : NSObject {
            handled by CameraViewController.viewWillTransition(to:with:).
            */
           let statusBarOrientation = UIApplication.shared.statusBarOrientation
-          var initialVideoOrientation: AVCaptureVideoOrientation = .portrait
-          if statusBarOrientation != .unknown {
-            if let videoOrientation = AVCaptureVideoOrientation(interfaceOrientation: statusBarOrientation) {
-              initialVideoOrientation = videoOrientation
-            }
-          }
-          
-          self.previewView?.videoPreviewLayer.connection?.videoOrientation = initialVideoOrientation
+          let videoOrientation = AVCaptureVideoOrientation(rawValue: statusBarOrientation.rawValue) ?? .portrait
+          self.previewView?.videoPreviewLayer.connection?.videoOrientation = videoOrientation
         }
       } else {
         print("Could not add video device input to the session")
@@ -409,7 +402,9 @@ class Capture : NSObject {
          capture is not supported when an AVCaptureMovieFileOutput is connected to the session.
          */
         self.session.beginConfiguration()
-        self.session.removeOutput(self.movieFileOutput!)
+        if let movieFileOutput = self.movieFileOutput {
+          self.session.removeOutput(movieFileOutput)
+        }
         self.session.sessionPreset = .photo
         self.movieFileOutput = nil
         self.photoOutput.isLivePhotoCaptureEnabled = self.photoOutput.isLivePhotoCaptureSupported
@@ -544,20 +539,18 @@ class Capture : NSObject {
      entering the session queue. We do this to ensure UI elements are accessed on
      the main thread and session configuration is done on the session queue.
      */
-    let videoPreviewLayerOrientation = previewView?.videoPreviewLayer.connection?.videoOrientation
+    let videoOrientation = previewView?.videoPreviewLayer.connection?.videoOrientation
     
     sessionQueue.async {
       // Update the photo output's connection to match the video orientation of the video preview layer.
       if let photoOutputConnection = self.photoOutput.connection(with: .video) {
-        photoOutputConnection.videoOrientation = videoPreviewLayerOrientation!
+        photoOutputConnection.videoOrientation = videoOrientation!
       }
       
       var photoSettings = AVCapturePhotoSettings()
       // Capture HEIF photo when supported, with flash set to auto and high resolution photo enabled.
       if  self.photoOutput.availablePhotoCodecTypes.contains(.hevc) {
-        
         photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
-        
       }
       
       if self.videoDeviceInput.device.isFlashAvailable {
@@ -612,8 +605,7 @@ class Capture : NSObject {
         self.sessionQueue.async {
           self.inProgressPhotoCaptureDelegates[photoCaptureProcessor.requestedPhotoSettings.uniqueID] = nil
         }
-      }
-      )
+      })
       
       /*
        The Photo Output keeps a weak reference to the photo capture delegate so
@@ -637,7 +629,7 @@ class Capture : NSObject {
      before entering the session queue. We do this to ensure UI elements are
      accessed on the main thread and session configuration is done on the session queue.
      */
-    let videoPreviewLayerOrientation = previewView?.videoPreviewLayer.connection?.videoOrientation
+    let videoOrientation = previewView?.videoPreviewLayer.connection?.videoOrientation
     
     sessionQueue.async {
       if !movieFileOutput.isRecording {
@@ -655,7 +647,7 @@ class Capture : NSObject {
         
         // Update the orientation on the movie file output video connection before starting recording.
         let movieFileOutputConnection = movieFileOutput.connection(with: .video)
-        movieFileOutputConnection?.videoOrientation = videoPreviewLayerOrientation!
+        movieFileOutputConnection?.videoOrientation = videoOrientation!
         
         let availableVideoCodecTypes = movieFileOutput.availableVideoCodecTypes
         
@@ -753,32 +745,6 @@ extension Capture: AVCaptureFileOutputRecordingDelegate {
       }
     } else {
       cleanUp()
-    }
-  }
-  
-}
-
-// MARK: - AVCaptureVideoOrientation
-
-private extension AVCaptureVideoOrientation {
-  
-  init?(deviceOrientation: UIDeviceOrientation) {
-    switch deviceOrientation {
-    case .portrait: self = .portrait
-    case .portraitUpsideDown: self = .portraitUpsideDown
-    case .landscapeLeft: self = .landscapeRight
-    case .landscapeRight: self = .landscapeLeft
-    default: return nil
-    }
-  }
-  
-  init?(interfaceOrientation: UIInterfaceOrientation) {
-    switch interfaceOrientation {
-    case .portrait: self = .portrait
-    case .portraitUpsideDown: self = .portraitUpsideDown
-    case .landscapeLeft: self = .landscapeLeft
-    case .landscapeRight: self = .landscapeRight
-    default: return nil
     }
   }
   
