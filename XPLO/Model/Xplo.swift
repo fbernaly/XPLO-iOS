@@ -38,8 +38,6 @@ class Capture : NSObject {
       previewView?.session = self.session
     }
   }
-  var onMovieStartRecording: (() -> Void)?
-  var onMovieFinishRecording: (() -> Void)?
   var onStartRunning: (() -> Void)?
   var onSessionInterrupted: ((AVCaptureSession.InterruptionReason) -> Void)?
   var onSessionInterruptionEnded: (() -> Void)?
@@ -63,11 +61,13 @@ class Capture : NSObject {
   }
   
   private var capturingPhotoCount: Int = 0
-  private var backgroundRecordingID: UIBackgroundTaskIdentifier?
   private var inProgressPhotoCaptureDelegates = [Int64: PhotoCaptureProcessor]()
+  private var videoRecordingProcessor: VideoRecordingProcessor?
   private var videoDeviceInput: AVCaptureDeviceInput!
   private let sessionQueue = DispatchQueue(label: "session queue") // Communicate with the session and other session objects on this queue.
-  private let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera, .builtInDualCamera, .builtInTrueDepthCamera],
+  private let videoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera,
+                                                                                           .builtInDualCamera,
+                                                                                           .builtInTrueDepthCamera],
                                                                              mediaType: .video,
                                                                              position: .unspecified)
   
@@ -285,7 +285,7 @@ class Capture : NSObject {
     /*
      In some scenarios we want to enable the user to resume the session running.
      For example, if music playback is initiated via control center while
-     using AVCam, then the user can let AVCam resume
+     using XPLO, then the user can let XPLO resume
      the session running, which will stop music playback. Note that stopping
      music playback in control center will not automatically resume the session
      running. Also note that it is not always possible to resume, see `resumeInterruptedSession(_:)`.
@@ -627,7 +627,8 @@ class Capture : NSObject {
   
   // MARK: Capture Video
   
-  func toggleMovieRecording() {
+  func toggleMovieRecording(onStartRecording: @escaping () -> Void,
+                            onFinishRecording: @escaping () -> Void) {
     guard let movieFileOutput = self.movieFileOutput else {
       return
     }
@@ -641,16 +642,17 @@ class Capture : NSObject {
     
     sessionQueue.async {
       if !movieFileOutput.isRecording {
+        var backgroundRecordingID: UIBackgroundTaskIdentifier?
         if UIDevice.current.isMultitaskingSupported {
           /*
            Setup background task.
            This is needed because the `capture(_:, didFinishRecordingToOutputFileAt:, fromConnections:, error:)`
-           callback is not received until AVCam returns to the foreground unless you request background execution time.
-           This also ensures that there will be time to write the file to the photo library when AVCam is backgrounded.
+           callback is not received until XPLO returns to the foreground unless you request background execution time.
+           This also ensures that there will be time to write the file to the photo library when XPLO is backgrounded.
            To conclude this background execution, endBackgroundTask(_:) is called in
            `capture(_:, didFinishRecordingToOutputFileAt:, fromConnections:, error:)` after the recorded file has been saved.
            */
-          self.backgroundRecordingID = UIApplication.shared.beginBackgroundTask(expirationHandler: nil)
+          backgroundRecordingID = UIApplication.shared.beginBackgroundTask(expirationHandler: nil)
         }
         
         // Update the orientation on the movie file output video connection before starting recording.
@@ -666,93 +668,11 @@ class Capture : NSObject {
         // Start recording to a temporary file.
         let outputFileName = NSUUID().uuidString
         let outputFilePath = (NSTemporaryDirectory() as NSString).appendingPathComponent((outputFileName as NSString).appendingPathExtension("mov")!)
-        movieFileOutput.startRecording(to: URL(fileURLWithPath: outputFilePath), recordingDelegate: self)
+        self.videoRecordingProcessor = VideoRecordingProcessor(withID: backgroundRecordingID, onStartRecording: onStartRecording, onFinishRecording: onFinishRecording)
+        movieFileOutput.startRecording(to: URL(fileURLWithPath: outputFilePath), recordingDelegate: self.videoRecordingProcessor!)
       } else {
         movieFileOutput.stopRecording()
       }
-    }
-  }
-  
-}
-
-// MARK: - AVCaptureFileOutputRecordingDelegate
-
-extension Capture: AVCaptureFileOutputRecordingDelegate {
-  
-  func fileOutput(_ output: AVCaptureFileOutput,
-                  didStartRecordingTo fileURL: URL,
-                  from connections: [AVCaptureConnection]) {
-    DispatchQueue.main.async {
-      self.onMovieStartRecording?()
-    }
-  }
-  
-  func fileOutput(_ output: AVCaptureFileOutput,
-                  didFinishRecordingTo outputFileURL: URL,
-                  from connections: [AVCaptureConnection],
-                  error: Error?) {
-    /*
-     Note that currentBackgroundRecordingID is used to end the background task
-     associated with this recording. This allows a new recording to be started,
-     associated with a new UIBackgroundTaskIdentifier, once the movie file output's
-     `isRecording` property is back to false — which happens sometime after this method
-     returns.
-     
-     Note: Since we use a unique file path for each recording, a new recording will
-     not overwrite a recording currently being saved.
-     */
-    func cleanUp() {
-      let path = outputFileURL.path
-      if FileManager.default.fileExists(atPath: path) {
-        do {
-          try FileManager.default.removeItem(atPath: path)
-        } catch {
-          print("Could not remove file at url: \(outputFileURL)")
-        }
-      }
-      
-      if let currentBackgroundRecordingID = backgroundRecordingID {
-        backgroundRecordingID = UIBackgroundTaskInvalid
-        
-        if currentBackgroundRecordingID != UIBackgroundTaskInvalid {
-          UIApplication.shared.endBackgroundTask(currentBackgroundRecordingID)
-        }
-      }
-      DispatchQueue.main.async {
-        self.onMovieFinishRecording?()
-      }
-    }
-    
-    var success = true
-    
-    if error != nil {
-      print("Movie file finishing error: \(String(describing: error))")
-      success = (((error! as NSError).userInfo[AVErrorRecordingSuccessfullyFinishedKey] as AnyObject).boolValue)!
-    }
-    
-    if success {
-      // Check authorization status.
-      PHPhotoLibrary.requestAuthorization { status in
-        if status == .authorized {
-          // Save the movie file to the photo library and cleanup.
-          PHPhotoLibrary.shared().performChanges({
-            let options = PHAssetResourceCreationOptions()
-            options.shouldMoveFile = true
-            let creationRequest = PHAssetCreationRequest.forAsset()
-            creationRequest.addResource(with: .video, fileURL: outputFileURL, options: options)
-          }, completionHandler: { success, error in
-            if !success {
-              print("Could not save movie to photo library: \(String(describing: error))")
-            }
-            cleanUp()
-          }
-          )
-        } else {
-          cleanUp()
-        }
-      }
-    } else {
-      cleanUp()
     }
   }
   

@@ -49,9 +49,9 @@ class CameraViewController: UIViewController {
         
       case .notAuthorized:
         DispatchQueue.main.async {
-          let changePrivacySetting = "AVCam doesn't have permission to use the camera, please change privacy settings"
+          let changePrivacySetting = "XPLO doesn't have permission to use the camera, please change privacy settings"
           let message = NSLocalizedString(changePrivacySetting, comment: "Alert message when the user has denied access to the camera")
-          let alertController = UIAlertController(title: "AVCam", message: message, preferredStyle: .alert)
+          let alertController = UIAlertController(title: "XPLO", message: message, preferredStyle: .alert)
           
           alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"),
                                                   style: .cancel,
@@ -70,7 +70,7 @@ class CameraViewController: UIViewController {
         DispatchQueue.main.async {
           let alertMsg = "Alert message when something goes wrong during capture session configuration"
           let message = NSLocalizedString("Unable to capture media", comment: alertMsg)
-          let alertController = UIAlertController(title: "AVCam", message: message, preferredStyle: .alert)
+          let alertController = UIAlertController(title: "XPLO", message: message, preferredStyle: .alert)
           
           alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"),
                                                   style: .cancel,
@@ -261,19 +261,17 @@ class CameraViewController: UIViewController {
     recordButton.isEnabled = false
     captureModeControl.isEnabled = false
     
-    xplo.onMovieStartRecording = {
+    xplo.toggleMovieRecording(onStartRecording: {
       self.recordButton.isEnabled = true
       self.recordButton.setTitle(NSLocalizedString("Stop", comment: "Recording button stop title"), for: [])
-    }
-    xplo.onMovieFinishRecording = {
+    }, onFinishRecording: {
       // Enable the Camera and Record buttons to let the user switch camera and start another recording.
       // Only enable the ability to change camera if the device has more than one camera.
       self.cameraButton.isEnabled = self.xplo.canToggleCamera
       self.recordButton.isEnabled = true
       self.recordButton.setTitle(NSLocalizedString("Record", comment: "Recording button record title"), for: [])
       self.captureModeControl.isEnabled = true
-    }
-    xplo.toggleMovieRecording()
+    })
   }
   
   // MARK: Session
@@ -282,7 +280,7 @@ class CameraViewController: UIViewController {
     xplo.resume() {
       if !self.xplo.isSessionRunning {
         let message = NSLocalizedString("Unable to resume", comment: "Alert message when unable to resume the session running")
-        let alertController = UIAlertController(title: "AVCam", message: message, preferredStyle: .alert)
+        let alertController = UIAlertController(title: "XPLO", message: message, preferredStyle: .alert)
         let cancelAction = UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"), style: .cancel, handler: nil)
         alertController.addAction(cancelAction)
         self.present(alertController, animated: true, completion: nil)

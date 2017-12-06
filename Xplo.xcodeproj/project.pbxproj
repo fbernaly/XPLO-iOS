@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0E0871851FD786F900ECE059 /* VideoRecordingProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */; };
 		0EEDB3E81FD7240500EDE147 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3E71FD7240500EDE147 /* AppDelegate.swift */; };
 		0EEDB3ED1FD7240500EDE147 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0EEDB3EB1FD7240500EDE147 /* Main.storyboard */; };
 		0EEDB3EF1FD7240500EDE147 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0EEDB3EE1FD7240500EDE147 /* Assets.xcassets */; };
@@ -18,6 +19,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecordingProcessor.swift; sourceTree = "<group>"; };
 		0EEDB3E41FD7240500EDE147 /* XPLO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XPLO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0EEDB3E71FD7240500EDE147 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0EEDB3EC1FD7240500EDE147 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */,
+				0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */,
 				0EEDB3FF1FD724AC00EDE147 /* Xplo.swift */,
 			);
 			path = Model;
@@ -173,6 +176,7 @@
 				0EEDB4031FD724AC00EDE147 /* Xplo.swift in Sources */,
 				0EEDB3E81FD7240500EDE147 /* AppDelegate.swift in Sources */,
 				0EEDB4001FD724AC00EDE147 /* PreviewView.swift in Sources */,
+				0E0871851FD786F900ECE059 /* VideoRecordingProcessor.swift in Sources */,
 				0EEDB4011FD724AC00EDE147 /* CameraViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
