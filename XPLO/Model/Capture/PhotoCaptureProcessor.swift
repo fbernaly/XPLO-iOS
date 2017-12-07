@@ -42,40 +42,52 @@ class PhotoCaptureProcessor: NSObject {
         }
       }
     }
-    
     completionHandler(self)
   }
   
 }
 
 extension PhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
+  
   /*
    This extension includes all the delegate callbacks for AVCapturePhotoCaptureDelegate protocol
    */
   
-  func photoOutput(_ output: AVCapturePhotoOutput, willBeginCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
-    if resolvedSettings.livePhotoMovieDimensions.width > 0 && resolvedSettings.livePhotoMovieDimensions.height > 0 {
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   willCapturePhotoFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
+    willCapturePhotoAnimation()
+  }
+  
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   willBeginCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
+    if resolvedSettings.livePhotoMovieDimensions.width > 0,
+      resolvedSettings.livePhotoMovieDimensions.height > 0 {
       livePhotoCaptureHandler(true)
     }
   }
   
-  func photoOutput(_ output: AVCapturePhotoOutput, willCapturePhotoFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
-    willCapturePhotoAnimation()
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   didFinishRecordingLivePhotoMovieForEventualFileAt outputFileURL: URL,
+                   resolvedSettings: AVCaptureResolvedPhotoSettings) {
+    livePhotoCaptureHandler(false)
   }
   
-  func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-    
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   didFinishProcessingPhoto photo: AVCapturePhoto,
+                   error: Error?) {
     if let error = error {
       print("Error capturing photo: \(error)")
     } else {
       photoData = photo.fileDataRepresentation()
     }
   }
-  func photoOutput(_ output: AVCapturePhotoOutput, didFinishRecordingLivePhotoMovieForEventualFileAt outputFileURL: URL, resolvedSettings: AVCaptureResolvedPhotoSettings) {
-    livePhotoCaptureHandler(false)
-  }
   
-  func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingLivePhotoToMovieFileAt outputFileURL: URL, duration: CMTime, photoDisplayTime: CMTime, resolvedSettings: AVCaptureResolvedPhotoSettings, error: Error?) {
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   didFinishProcessingLivePhotoToMovieFileAt outputFileURL: URL,
+                   duration: CMTime,
+                   photoDisplayTime: CMTime,
+                   resolvedSettings: AVCaptureResolvedPhotoSettings,
+                   error: Error?) {
     if error != nil {
       print("Error processing live photo companion movie: \(String(describing: error))")
       return
@@ -83,7 +95,9 @@ extension PhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
     livePhotoCompanionMovieURL = outputFileURL
   }
   
-  func photoOutput(_ output: AVCapturePhotoOutput, didFinishCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings, error: Error?) {
+  func photoOutput(_ output: AVCapturePhotoOutput,
+                   didFinishCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings,
+                   error: Error?) {
     if let error = error {
       print("Error capturing photo: \(error)")
       didFinish()
@@ -114,13 +128,12 @@ extension PhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
           if let error = error {
             print("Error occurered while saving photo to photo library: \(error)")
           }
-          
           self.didFinish()
-        }
-        )
+        })
       } else {
         self.didFinish()
       }
     }
   }
+  
 }

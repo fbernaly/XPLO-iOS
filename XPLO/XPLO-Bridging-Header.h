@@ -3,3 +3,4 @@
 //
 
 #import "PhotoAlbumViewController.h"
+#import "minMaxFromBuffer.h"
