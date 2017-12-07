@@ -18,6 +18,7 @@ class CameraViewController: UIViewController {
   @IBOutlet weak var cameraButton: UIButton!
   @IBOutlet weak var recordButton: UIButton!
   @IBOutlet weak var resumeButton: UIButton!
+  @IBOutlet weak var flashButton: UIButton!
   @IBOutlet weak var mainPreviewHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var secondaryPreviewHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var secondaryPreviewWidthConstraint: NSLayoutConstraint!
@@ -35,6 +36,7 @@ class CameraViewController: UIViewController {
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
     photoButton.isEnabled = false
+    flashButton.isEnabled = false
     
     setupXplo()
   }
@@ -109,6 +111,7 @@ class CameraViewController: UIViewController {
     camera.onStartRunning = {
       let isSessionRunning = self.camera.isSessionRunning
       self.albumButton.isEnabled = isSessionRunning
+      self.flashButton.isEnabled = isSessionRunning
       // Only enable the ability to change camera if the device has more than one camera.
       self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
       self.recordButton.isEnabled = isSessionRunning && self.camera.movieFileOutput != nil
@@ -206,6 +209,7 @@ class CameraViewController: UIViewController {
       return
     }
     albumButton.isEnabled = false
+    flashButton.isEnabled = false
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
     photoButton.isEnabled = false
@@ -213,6 +217,7 @@ class CameraViewController: UIViewController {
     secondaryPreview.pixelBuffer = nil
     camera.toggleCaptureDevice() {
       self.albumButton.isEnabled = true
+      self.flashButton.isEnabled = true
       self.cameraButton.isEnabled = true
       self.recordButton.isEnabled = self.camera.movieFileOutput != nil
       self.photoButton.isEnabled = true
@@ -270,6 +275,24 @@ class CameraViewController: UIViewController {
       self.recordButton.isEnabled = true
       self.recordButton.setTitle(NSLocalizedString("Record", comment: "Recording button record title"), for: [])
     })
+  }
+  
+  // MARK: Flash
+  
+  @IBAction func flashButtonTapped(_ sender: UIButton) {
+    switch camera.flashMode {
+    case .auto:
+      camera.flashMode = .on
+      flashButton.setTitle("Flash ON", for: .normal)
+      
+    case .on:
+      camera.flashMode = .off
+      flashButton.setTitle("Flash OFF", for: .normal)
+      
+    case .off:
+      camera.flashMode = .auto
+      flashButton.setTitle("Flash AUTO", for: .normal)
+    }
   }
   
   // MARK: Session

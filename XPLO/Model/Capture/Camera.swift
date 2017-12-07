@@ -34,6 +34,7 @@ class Camera : NSObject {
   private(set) var videoDeviceInput: AVCaptureDeviceInput!
   private(set) var setupResult: SessionSetupResult = .success
   
+  var flashMode: AVCaptureDevice.FlashMode = .auto
   var isSessionRunning: Bool { return self.session.isRunning }
   var isCapturingPhoto: Bool { return self.capturingLivePhotoCount > 0 || self.inProgressPhotoCaptureDelegates.count > 0 }
   var canToggleCaptureDevice: Bool {
@@ -530,7 +531,7 @@ class Camera : NSObject {
       }
       
       if self.videoDeviceInput.device.isFlashAvailable {
-        photoSettings.flashMode = .auto
+        photoSettings.flashMode = self.flashMode
       }
       
       photoSettings.isHighResolutionPhotoEnabled = true
