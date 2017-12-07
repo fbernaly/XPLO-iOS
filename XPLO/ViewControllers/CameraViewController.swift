@@ -10,19 +10,15 @@ import UIKit
 
 class CameraViewController: UIViewController {
   
-  @IBOutlet weak var previewView: PreviewView!
+  @IBOutlet weak var previewView: PreviewMetalView!
   @IBOutlet weak var cameraUnavailableLabel: UILabel!
-  @IBOutlet weak var capturingLivePhotoLabel: UILabel!
   @IBOutlet weak var albumButton: UIButton!
   @IBOutlet weak var photoButton: UIButton!
   @IBOutlet weak var cameraButton: UIButton!
   @IBOutlet weak var recordButton: UIButton!
   @IBOutlet weak var resumeButton: UIButton!
-  @IBOutlet weak var livePhotoModeButton: UIButton!
-  @IBOutlet weak var depthDataDeliveryButton: UIButton!
-  @IBOutlet weak var captureModeControl: UISegmentedControl!
   
-  let xplo = Capture()
+  let camera = Camera()
   
   // MARK: View Controller Life Cycle
   
@@ -33,18 +29,14 @@ class CameraViewController: UIViewController {
     albumButton.isEnabled = false
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
-    recordButton.isHidden = true
     photoButton.isEnabled = false
-    livePhotoModeButton.isEnabled = false
-    depthDataDeliveryButton.isEnabled = false
-    captureModeControl.isEnabled = false
     
     setupXplo()
   }
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
-    xplo.start() { (result) in
+    camera.start() { (result) in
       switch result {
       case .success:
         break
@@ -85,13 +77,13 @@ class CameraViewController: UIViewController {
   }
   
   override func viewWillDisappear(_ animated: Bool) {
-    xplo.stop()
+    camera.stop()
     super.viewWillDisappear(animated)
   }
   
   override var shouldAutorotate: Bool {
     // Disable autorotation of the interface when recording is in progress.
-    if let movieFileOutput = xplo.movieFileOutput {
+    if let movieFileOutput = camera.movieFileOutput {
       return !movieFileOutput.isRecording
     }
     return true
@@ -103,32 +95,21 @@ class CameraViewController: UIViewController {
   
   override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
     super.viewWillTransition(to: size, with: coordinator)
-    xplo.rotate()
+    camera.rotate()
   }
   
   // MARK: Xplo Setup
   
   func setupXplo() {
-    xplo.previewView = previewView
-    xplo.onStartRunning = {
-      let isSessionRunning = self.xplo.isSessionRunning
-      let isLivePhotoCaptureSupported = self.xplo.photoOutput.isLivePhotoCaptureSupported
-      let isLivePhotoCaptureEnabled = self.xplo.photoOutput.isLivePhotoCaptureEnabled
-      let isDepthDeliveryDataSupported = self.xplo.photoOutput.isDepthDataDeliverySupported
-      let isDepthDeliveryDataEnabled = self.xplo.photoOutput.isDepthDataDeliveryEnabled
-      
-      // Only enable the ability to change camera if the device has more than one camera.
+    camera.onStartRunning = {
+      let isSessionRunning = self.camera.isSessionRunning
       self.albumButton.isEnabled = isSessionRunning
-      self.cameraButton.isEnabled = isSessionRunning && self.xplo.canToggleCamera
-      self.recordButton.isEnabled = isSessionRunning && self.xplo.movieFileOutput != nil
+      // Only enable the ability to change camera if the device has more than one camera.
+      self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
+      self.recordButton.isEnabled = isSessionRunning && self.camera.movieFileOutput != nil
       self.photoButton.isEnabled = isSessionRunning
-      self.captureModeControl.isEnabled = isSessionRunning
-      self.livePhotoModeButton.isEnabled = isSessionRunning && isLivePhotoCaptureEnabled
-      self.livePhotoModeButton.isHidden = !(isSessionRunning && isLivePhotoCaptureSupported)
-      self.depthDataDeliveryButton.isEnabled = isSessionRunning && isDepthDeliveryDataEnabled
-      self.depthDataDeliveryButton.isHidden = !(isSessionRunning && isDepthDeliveryDataSupported)
     }
-    xplo.onSessionInterrupted = { (reason) in
+    camera.onSessionInterrupted = { (reason) in
       if reason == .audioDeviceInUseByAnotherClient
         || reason == .videoDeviceInUseByAnotherClient {
         // Simply fade-in a button to enable the user to try to resume the session running.
@@ -147,7 +128,7 @@ class CameraViewController: UIViewController {
       }
       
     }
-    xplo.onSessionInterruptionEnded = {
+    camera.onSessionInterruptionEnded = {
       if !self.resumeButton.isHidden {
         UIView.animate(withDuration: 0.25,
                        animations: {
@@ -165,99 +146,72 @@ class CameraViewController: UIViewController {
         })
       }
     }
+    camera.onRotation = {
+      let interfaceOrientation = UIApplication.shared.statusBarOrientation
+      let videoPosition = self.camera.videoDeviceInput.device.position
+      let videoOrientation = self.camera.videoDataOutput.connection(with: .video)!.videoOrientation
+      let rotation = PreviewMetalView.Rotation(with: interfaceOrientation, videoOrientation: videoOrientation, cameraPosition: videoPosition)
+      self.previewView.mirroring = (videoPosition == .front)
+      if let rotation = rotation {
+        self.previewView.rotation = rotation
+      }
+    }
+    camera.onImageStreamed = { (buffer) in
+      self.previewView.pixelBuffer = buffer
+    }
+    camera.onDepthStreamed = { (buffer) in
+      //      self.previewView.pixelBuffer = buffer
+    }
   }
   
   // MARK: Device Configuration
   
-  @IBAction func toggleCaptureMode(_ sender: UISegmentedControl) {
-    guard let captureMode = CaptureMode(rawValue: captureModeControl.selectedSegmentIndex) else {
+  @IBAction func toggleCamera(_ sender: UIButton) {
+    guard camera.canToggleCaptureDevice else {
       return
     }
-    captureModeControl.isEnabled = false
-    xplo.setCaptureMode(captureMode) {
-      self.captureModeControl.isEnabled = true
-      switch captureMode {
-      case .photo:
-        self.depthDataDeliveryButton.isHidden = !self.xplo.photoOutput.isDepthDataDeliverySupported
-        self.depthDataDeliveryButton.isEnabled = self.xplo.photoOutput.isDepthDataDeliveryEnabled
-        self.livePhotoModeButton.isHidden = !self.xplo.photoOutput.isLivePhotoCaptureSupported
-        self.livePhotoModeButton.isEnabled = self.xplo.photoOutput.isLivePhotoCaptureEnabled
-        self.recordButton.isHidden = true
-        
-      case .movie:
-        self.depthDataDeliveryButton.isHidden = !self.xplo.photoOutput.isDepthDataDeliverySupported
-        self.depthDataDeliveryButton.isEnabled = self.xplo.photoOutput.isDepthDataDeliveryEnabled
-        self.livePhotoModeButton.isHidden = true
-        self.recordButton.isHidden = false
-        self.recordButton.isEnabled = self.xplo.movieFileOutput != nil
-      }
-    }
-  }
-  
-  @IBAction func toggleCamera(_ sender: UIButton) {
     albumButton.isEnabled = false
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
     photoButton.isEnabled = false
-    livePhotoModeButton.isEnabled = false
-    captureModeControl.isEnabled = false
-    xplo.toggleCamera() {
+    previewView.pixelBuffer = nil
+    camera.toggleCaptureDevice() {
       self.albumButton.isEnabled = true
       self.cameraButton.isEnabled = true
-      self.recordButton.isHidden = self.xplo.captureMode != .movie
-      self.recordButton.isEnabled = self.xplo.movieFileOutput != nil
+      self.recordButton.isEnabled = self.camera.movieFileOutput != nil
       self.photoButton.isEnabled = true
-      self.livePhotoModeButton.isEnabled = true
-      self.captureModeControl.isEnabled = true
-      self.depthDataDeliveryButton.isHidden = !self.xplo.photoOutput.isDepthDataDeliverySupported
-      self.depthDataDeliveryButton.isEnabled = self.xplo.photoOutput.isDepthDataDeliveryEnabled
     }
   }
   
-  @IBAction func toggleLivePhotoMode(_ sender: UIButton) {
-    xplo.toggleLivePhotoMode() {
-      switch self.xplo.livePhotoMode {
-      case .on:
-        self.livePhotoModeButton.setTitle(NSLocalizedString("Live Photo Mode: On", comment: "Live photo mode button on title"), for: [])
-        
-      case .off:
-        self.livePhotoModeButton.setTitle(NSLocalizedString("Live Photo Mode: Off", comment: "Live photo mode button off title"), for: [])
-      }
+  @IBAction func focusAndExposeTap(_ gesture: UITapGestureRecognizer) {
+    let location = gesture.location(in: previewView)
+    guard let texturePoint = previewView.texturePointForView(point: location) else {
+      return
     }
-  }
-  
-  @IBAction func toggleDepthDataDeliveryMode(_ depthDataDeliveryButton: UIButton) {
-    xplo.toggleDepthDataDeliveryMode() {
-      switch self.xplo.depthDataDeliveryMode {
-      case .on:
-        self.depthDataDeliveryButton.setTitle(NSLocalizedString("Depth Data Delivery: On", comment: "Depth Data Delivery button on title"), for: [])
-        
-      case .off:
-        self.depthDataDeliveryButton.setTitle(NSLocalizedString("Depth Data Delivery: Off", comment: "Depth Data Delivery button off title"), for: [])
-      }
-    }
-  }
-  
-  @IBAction func focusAndExposeTap(_ gestureRecognizer: UITapGestureRecognizer) {
-    let devicePoint = previewView.videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: gestureRecognizer.location(in: gestureRecognizer.view))
-    xplo.focus(with: .autoFocus,
-               exposureMode: .autoExpose,
-               at: devicePoint,
-               monitorSubjectAreaChange: true)
+    
+    let textureRect = CGRect(origin: texturePoint, size: .zero)
+    let deviceRect = camera.videoDataOutput.metadataOutputRectConverted(fromOutputRect: textureRect)
+    camera.focus(with: .autoFocus,
+                 exposureMode: .autoExpose,
+                 at: deviceRect.origin,
+                 monitorSubjectAreaChange: true)
   }
   
   // MARK: Capturing Photos
   
   @IBAction func capturePhoto(_ sender: UIButton) {
-    xplo.capturePhoto() {
-      self.capturingLivePhotoLabel.isHidden = !(self.xplo.livePhotoMode == .on && self.xplo.isCapturingPhoto)
-    }
+    camera.capturePhoto(willCapturePhoto: {
+      self.previewView.layer.opacity = 0
+      UIView.animate(withDuration: 0.25) {
+        self.previewView.layer.opacity = 1
+      }
+    })
   }
   
   // MARK: Recording Movies
   
   @IBAction func toggleMovieRecording(_ sender: UIButton) {
-    guard let _ = self.xplo.movieFileOutput else {
+    guard let _ = self.camera.movieFileOutput else {
       return
     }
     
@@ -265,26 +219,24 @@ class CameraViewController: UIViewController {
     // the Record button until recording starts or finishes.
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
-    captureModeControl.isEnabled = false
     
-    xplo.toggleMovieRecording(onStartRecording: {
+    camera.toggleMovieRecording(onStartRecording: {
       self.recordButton.isEnabled = true
       self.recordButton.setTitle(NSLocalizedString("Stop", comment: "Recording button stop title"), for: [])
     }, onFinishRecording: {
       // Enable the Camera and Record buttons to let the user switch camera and start another recording.
       // Only enable the ability to change camera if the device has more than one camera.
-      self.cameraButton.isEnabled = self.xplo.canToggleCamera
+      self.cameraButton.isEnabled = self.camera.canToggleCaptureDevice
       self.recordButton.isEnabled = true
       self.recordButton.setTitle(NSLocalizedString("Record", comment: "Recording button record title"), for: [])
-      self.captureModeControl.isEnabled = true
     })
   }
   
   // MARK: Session
   
   @IBAction func resumeInterruptedSession(_ sender: UIButton) {
-    xplo.resume() {
-      if !self.xplo.isSessionRunning {
+    camera.resume() {
+      if !self.camera.isSessionRunning {
         let message = NSLocalizedString("Unable to resume", comment: "Alert message when unable to resume the session running")
         let alertController = UIAlertController(title: "XPLO", message: message, preferredStyle: .alert)
         let cancelAction = UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"), style: .cancel, handler: nil)
