@@ -10,15 +10,20 @@ import UIKit
 
 class CameraViewController: UIViewController {
   
-  @IBOutlet weak var previewView: PreviewMetalView!
+  @IBOutlet weak var mainPreview: PreviewMetalView!
+  @IBOutlet weak var secondaryPreview: PreviewMetalView!
   @IBOutlet weak var cameraUnavailableLabel: UILabel!
   @IBOutlet weak var albumButton: UIButton!
   @IBOutlet weak var photoButton: UIButton!
   @IBOutlet weak var cameraButton: UIButton!
   @IBOutlet weak var recordButton: UIButton!
   @IBOutlet weak var resumeButton: UIButton!
+  @IBOutlet weak var mainPreviewHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var secondaryPreviewHeightConstraint: NSLayoutConstraint!
+  @IBOutlet weak var secondaryPreviewWidthConstraint: NSLayoutConstraint!
   
   let camera = Camera()
+  var togglePreview = false
   
   // MARK: View Controller Life Cycle
   
@@ -151,16 +156,46 @@ class CameraViewController: UIViewController {
       let videoPosition = self.camera.videoDeviceInput.device.position
       let videoOrientation = self.camera.videoDataOutput.connection(with: .video)!.videoOrientation
       let rotation = PreviewMetalView.Rotation(with: interfaceOrientation, videoOrientation: videoOrientation, cameraPosition: videoPosition)
-      self.previewView.mirroring = (videoPosition == .front)
+      self.mainPreview.mirroring = videoPosition == .front
+      self.secondaryPreview.mirroring = videoPosition == .front
       if let rotation = rotation {
-        self.previewView.rotation = rotation
+        self.mainPreview.rotation = rotation
+        self.secondaryPreview.rotation = rotation
       }
     }
     camera.onImageStreamed = { (buffer) in
-      self.previewView.pixelBuffer = buffer
+      if self.togglePreview {
+        self.secondaryPreview.pixelBuffer = buffer
+      } else {
+        self.mainPreview.pixelBuffer = buffer
+      }
+      
+      // update constraints
+      let interfaceOrientation = UIApplication.shared.statusBarOrientation
+      if interfaceOrientation.isPortrait {
+        self.mainPreviewHeightConstraint.constant = self.mainPreview.bounds.size.width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
+      } else {
+        self.mainPreviewHeightConstraint.constant = self.view.bounds.size.height
+      }
     }
     camera.onDepthStreamed = { (buffer) in
-      //      self.previewView.pixelBuffer = buffer
+      if self.togglePreview {
+        self.mainPreview.pixelBuffer = buffer
+      } else {
+        self.secondaryPreview.pixelBuffer = buffer
+      }
+      
+      // update constraints
+      let interfaceOrientation = UIApplication.shared.statusBarOrientation
+      if interfaceOrientation.isPortrait {
+        let width: CGFloat = 100
+        self.secondaryPreviewWidthConstraint.constant = width
+        self.secondaryPreviewHeightConstraint.constant = width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
+      } else {
+        let heigth: CGFloat = 130
+        self.secondaryPreviewHeightConstraint.constant = heigth
+        self.secondaryPreviewWidthConstraint.constant = heigth * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
+      }
     }
   }
   
@@ -174,7 +209,8 @@ class CameraViewController: UIViewController {
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
     photoButton.isEnabled = false
-    previewView.pixelBuffer = nil
+    mainPreview.pixelBuffer = nil
+    secondaryPreview.pixelBuffer = nil
     camera.toggleCaptureDevice() {
       self.albumButton.isEnabled = true
       self.cameraButton.isEnabled = true
@@ -184,8 +220,8 @@ class CameraViewController: UIViewController {
   }
   
   @IBAction func focusAndExposeTap(_ gesture: UITapGestureRecognizer) {
-    let location = gesture.location(in: previewView)
-    guard let texturePoint = previewView.texturePointForView(point: location) else {
+    let location = gesture.location(in: mainPreview)
+    guard let texturePoint = mainPreview.texturePointForView(point: location) else {
       return
     }
     
@@ -197,13 +233,17 @@ class CameraViewController: UIViewController {
                  monitorSubjectAreaChange: true)
   }
   
+  @IBAction func togglePreviewTap(_ gesture: UITapGestureRecognizer) {
+    togglePreview = !togglePreview
+  }
+  
   // MARK: Capturing Photos
   
   @IBAction func capturePhoto(_ sender: UIButton) {
     camera.capturePhoto(willCapturePhoto: {
-      self.previewView.layer.opacity = 0
+      self.mainPreview.layer.opacity = 0
       UIView.animate(withDuration: 0.25) {
-        self.previewView.layer.opacity = 1
+        self.mainPreview.layer.opacity = 1
       }
     })
   }

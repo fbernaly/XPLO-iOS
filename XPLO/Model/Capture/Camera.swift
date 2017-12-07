@@ -605,7 +605,9 @@ extension Camera: AVCaptureVideoDataOutputSampleBufferDelegate {
       else {
         return
     }
-    onImageStreamed?(videoPixelBuffer)
+    DispatchQueue.main.async {
+      self.onImageStreamed?(videoPixelBuffer)
+    }
   }
   
 }
@@ -636,7 +638,9 @@ extension Camera: AVCaptureDepthDataOutputDelegate {
       print("Unable to process depth")
       return
     }
-    onDepthStreamed?(depthPixelBuffer)
+    DispatchQueue.main.async {
+      self.onDepthStreamed?(depthPixelBuffer)
+    }
   }
   
 }
