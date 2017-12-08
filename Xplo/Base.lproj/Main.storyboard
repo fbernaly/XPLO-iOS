@@ -127,36 +127,52 @@
                                     </button>
                                 </subviews>
                             </stackView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Z56-X8-hDD">
-                                <rect key="frame" x="16" y="20" width="50" height="50"/>
-                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <constraints>
-                                    <constraint firstAttribute="width" secondItem="Z56-X8-hDD" secondAttribute="height" multiplier="1:1" id="ux0-WI-bdB"/>
-                                    <constraint firstAttribute="width" constant="50" id="zvk-j5-TXF"/>
-                                </constraints>
-                                <state key="normal" image="flash_auto">
-                                    <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                </state>
-                                <connections>
-                                    <action selector="flashButtonTapped:" destination="7wT-eC-pyf" eventType="touchUpInside" id="a60-1r-AXk"/>
-                                </connections>
-                            </button>
+                            <stackView opaque="NO" contentMode="scaleToFill" alignment="top" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="aux-aU-OI4">
+                                <rect key="frame" x="10" y="20" width="110" height="50"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Z56-X8-hDD">
+                                        <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="Z56-X8-hDD" secondAttribute="height" multiplier="1:1" id="ux0-WI-bdB"/>
+                                            <constraint firstAttribute="width" constant="50" id="zvk-j5-TXF"/>
+                                        </constraints>
+                                        <state key="normal" image="flash_auto">
+                                            <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        </state>
+                                        <connections>
+                                            <action selector="flashButtonTapped:" destination="7wT-eC-pyf" eventType="touchUpInside" id="a60-1r-AXk"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="PM8-U7-dVb">
+                                        <rect key="frame" x="60" y="0.0" width="50" height="50"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="50" id="Nz9-ZI-SxY"/>
+                                            <constraint firstAttribute="width" secondItem="PM8-U7-dVb" secondAttribute="height" multiplier="1:1" id="aW7-FK-Hdg"/>
+                                        </constraints>
+                                        <state key="normal" image="filter"/>
+                                        <connections>
+                                            <action selector="filterButtonTapped:" destination="7wT-eC-pyf" eventType="touchUpInside" id="ohm-DL-iDB"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </stackView>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="XGH-av-pdF" firstAttribute="centerX" secondItem="0Xc-kn-a4p" secondAttribute="centerX" id="75t-hO-0px"/>
                             <constraint firstItem="0Xc-kn-a4p" firstAttribute="trailing" secondItem="VLU-h9-heN" secondAttribute="trailing" id="DXP-Hd-4b1"/>
                             <constraint firstItem="0Xc-kn-a4p" firstAttribute="bottom" secondItem="SBu-In-K5F" secondAttribute="bottom" constant="20" id="G2r-30-2nF"/>
-                            <constraint firstItem="Z56-X8-hDD" firstAttribute="leading" secondItem="0Xc-kn-a4p" secondAttribute="leading" constant="16" id="Om1-mu-hiL"/>
                             <constraint firstItem="SBu-In-K5F" firstAttribute="centerX" secondItem="gSR-Vp-0Rp" secondAttribute="centerX" id="Pno-6G-bE6"/>
                             <constraint firstItem="jyN-oq-JNk" firstAttribute="leading" secondItem="VLU-h9-heN" secondAttribute="leading" id="SBB-CD-wwt"/>
+                            <constraint firstItem="aux-aU-OI4" firstAttribute="leading" secondItem="0Xc-kn-a4p" secondAttribute="leading" constant="10" id="UDc-mS-s7d"/>
                             <constraint firstItem="VLU-h9-heN" firstAttribute="leading" secondItem="0Xc-kn-a4p" secondAttribute="leading" id="XVe-84-Kji"/>
                             <constraint firstItem="jyN-oq-JNk" firstAttribute="bottom" secondItem="VLU-h9-heN" secondAttribute="bottom" id="bO0-q1-9dT"/>
-                            <constraint firstItem="Z56-X8-hDD" firstAttribute="top" secondItem="0Xc-kn-a4p" secondAttribute="top" id="dzl-Ih-fXi"/>
                             <constraint firstItem="VLU-h9-heN" firstAttribute="centerY" secondItem="gSR-Vp-0Rp" secondAttribute="centerY" id="gxx-gW-ehj"/>
                             <constraint firstItem="PnU-ce-FM5" firstAttribute="centerY" secondItem="gSR-Vp-0Rp" secondAttribute="centerY" id="iLR-dZ-Yuv"/>
                             <constraint firstItem="XGH-av-pdF" firstAttribute="centerY" secondItem="gSR-Vp-0Rp" secondAttribute="centerY" id="joz-8E-D21"/>
                             <constraint firstItem="PnU-ce-FM5" firstAttribute="centerX" secondItem="0Xc-kn-a4p" secondAttribute="centerX" id="pMn-Ey-OJZ"/>
+                            <constraint firstItem="aux-aU-OI4" firstAttribute="top" secondItem="0Xc-kn-a4p" secondAttribute="top" id="sX9-Ua-7Ed"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="0Xc-kn-a4p"/>
                     </view>
@@ -166,6 +182,7 @@
                         <outlet property="albumButton" destination="7Tl-W6-S0j" id="K2n-dv-Lu1"/>
                         <outlet property="cameraButton" destination="Wcu-Zu-xtD" id="7OT-jB-BFu"/>
                         <outlet property="cameraUnavailableLabel" destination="XGH-av-pdF" id="EMS-uC-52F"/>
+                        <outlet property="filterButton" destination="PM8-U7-dVb" id="juS-Vt-Lwm"/>
                         <outlet property="flashButton" destination="Z56-X8-hDD" id="zXM-To-R37"/>
                         <outlet property="mainPreview" destination="VLU-h9-heN" id="WOs-Vl-CSA"/>
                         <outlet property="mainPreviewHeightConstraint" destination="km1-E1-Ekj" id="Kkb-Hl-e9C"/>
@@ -297,6 +314,7 @@
     <resources>
         <image name="back" width="33" height="33"/>
         <image name="capture_photo" width="170" height="170"/>
+        <image name="filter" width="25" height="25"/>
         <image name="flash_auto" width="25" height="25"/>
         <image name="gyro" width="33" height="33"/>
         <image name="photo_album" width="33" height="33"/>

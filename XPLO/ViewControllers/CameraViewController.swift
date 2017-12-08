@@ -19,6 +19,7 @@ class CameraViewController: UIViewController {
   @IBOutlet weak var recordButton: UIButton!
   @IBOutlet weak var resumeButton: UIButton!
   @IBOutlet weak var flashButton: UIButton!
+  @IBOutlet weak var filterButton: UIButton!
   @IBOutlet weak var mainPreviewHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var secondaryPreviewHeightConstraint: NSLayoutConstraint!
   @IBOutlet weak var secondaryPreviewWidthConstraint: NSLayoutConstraint!
@@ -39,6 +40,7 @@ class CameraViewController: UIViewController {
     recordButton.isEnabled = false
     photoButton.isEnabled = false
     flashButton.isEnabled = false
+    filterButton.isEnabled = false
     
     setupXplo()
   }
@@ -114,6 +116,7 @@ class CameraViewController: UIViewController {
       let isSessionRunning = self.camera.isSessionRunning
       self.albumButton.isEnabled = isSessionRunning
       self.flashButton.isEnabled = isSessionRunning
+      self.filterButton.isEnabled = isSessionRunning
       // Only enable the ability to change camera if the device has more than one camera.
       self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
       self.recordButton.isEnabled = isSessionRunning && self.camera.movieFileOutput != nil
@@ -212,6 +215,7 @@ class CameraViewController: UIViewController {
     }
     albumButton.isEnabled = false
     flashButton.isEnabled = false
+    filterButton.isEnabled = false
     cameraButton.isEnabled = false
     recordButton.isEnabled = false
     photoButton.isEnabled = false
@@ -223,6 +227,7 @@ class CameraViewController: UIViewController {
       self.cameraButton.isEnabled = true
       self.recordButton.isEnabled = self.camera.movieFileOutput != nil
       self.photoButton.isEnabled = true
+      self.filterButton.isEnabled = true
     }
   }
   
@@ -295,6 +300,17 @@ class CameraViewController: UIViewController {
       camera.flashMode = .auto
       flashButton.setImage(UIImage(named: "flash_auto"), for: .normal)
     }
+  }
+  
+  // MARK: Filter
+  
+  @IBAction func filterButtonTapped(_ sender: UIButton) {
+    if camera.depthDataOutput.isFilteringEnabled {
+      sender.setImage(UIImage(named: "no_filter"), for: .normal)
+    } else {
+      sender.setImage(UIImage(named: "filter"), for: .normal)
+    }
+    camera.depthDataOutput.isFilteringEnabled = !camera.depthDataOutput.isFilteringEnabled
   }
   
   // MARK: Session
