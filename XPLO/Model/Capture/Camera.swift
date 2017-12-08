@@ -254,9 +254,9 @@ class Camera : NSObject {
           return
         }
         self.session.addOutput(self.photoOutput)
-        self.photoOutput.isHighResolutionCaptureEnabled = true
-        self.photoOutput.isDepthDataDeliveryEnabled = self.photoOutput.isDepthDataDeliverySupported
       }
+      self.photoOutput.isHighResolutionCaptureEnabled = true
+      self.photoOutput.isDepthDataDeliveryEnabled = self.photoOutput.isDepthDataDeliverySupported
       
       // Add a video data output
       if !self.session.outputs.contains(self.videoDataOutput) {
@@ -267,9 +267,9 @@ class Camera : NSObject {
           return
         }
         self.session.addOutput(self.videoDataOutput)
-        self.videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
-        self.videoDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
       }
+      self.videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
+      self.videoDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
       
       // Add a depth data output
       if !self.session.outputs.contains(self.depthDataOutput) {
@@ -280,13 +280,13 @@ class Camera : NSObject {
           return
         }
         self.session.addOutput(self.depthDataOutput)
-        self.depthDataOutput.setDelegate(self, callbackQueue: self.dataOutputQueue)
-        self.depthDataOutput.isFilteringEnabled = true
-        if let connection = self.depthDataOutput.connection(with: .depthData) {
-          connection.isEnabled = self.photoOutput.isDepthDataDeliverySupported
-        } else {
-          print("No AVCaptureConnection")
-        }
+      }
+      self.depthDataOutput.setDelegate(self, callbackQueue: self.dataOutputQueue)
+      self.depthDataOutput.isFilteringEnabled = true
+      if let connection = self.depthDataOutput.connection(with: .depthData) {
+        connection.isEnabled = self.photoOutput.isDepthDataDeliverySupported
+      } else {
+        print("No AVCaptureConnection")
       }
       
       if self.photoOutput.isDepthDataDeliverySupported {
