@@ -103,7 +103,36 @@ class Camera : NSObject {
      that the main queue isn't blocked, which keeps the UI responsive.
      */
     sessionQueue.async {
-      self.configureSession()
+      if self.setupResult != .success {
+        return
+      }
+      
+      var captureDevice: AVCaptureDevice?
+      
+      // Choose the back dual camera if available, otherwise default to a wide angle camera.
+      if let dualCameraDevice = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back) {
+        captureDevice = dualCameraDevice
+      } else if let backCameraDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
+        // If the back dual camera is not available, default to the back wide angle camera.
+        captureDevice = backCameraDevice
+      } else if let trueDepthCameraDevice = AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front) {
+        // If front camera is not available, default to true depth camera.
+        captureDevice = trueDepthCameraDevice
+      } else if let frontCameraDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) {
+        /*
+         In some cases where users break their phones, the back wide angle camera is not available.
+         In this case, we should default to the front wide angle camera.
+         */
+        captureDevice = frontCameraDevice
+      }
+      
+      guard let videoDevice = captureDevice else {
+        print("Could not find any video device")
+        self.setupResult = .configurationFailed
+        return
+      }
+
+      self.configureSession(with: videoDevice)
     }
   }
   
@@ -167,138 +196,128 @@ class Camera : NSObject {
   
   // MARK: Session
   
-  private func configureSession() {
-    if setupResult != .success {
-      return
-    }
-    
-    session.beginConfiguration()
-    
-    /*
-     We do not create an AVCaptureMovieFileOutput when setting up the session because the
-     AVCaptureMovieFileOutput does not support movie recording with AVCaptureSession.Preset.Photo.
-     */
-    session.sessionPreset = .photo
-    
-    var captureDevice: AVCaptureDevice?
-    
-    // Choose the back dual camera if available, otherwise default to a wide angle camera.
-    if let dualCameraDevice = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back) {
-      captureDevice = dualCameraDevice
-    } else if let backCameraDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
-      // If the back dual camera is not available, default to the back wide angle camera.
-      captureDevice = backCameraDevice
-    } else if let trueDepthCameraDevice = AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front) {
-      // If front camera is not available, default to true depth camera.
-      captureDevice = trueDepthCameraDevice
-    } else if let frontCameraDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) {
-      /*
-       In some cases where users break their phones, the back wide angle camera is not available.
-       In this case, we should default to the front wide angle camera.
-       */
-      captureDevice = frontCameraDevice
-    }
-    
-    guard let videoDevice = captureDevice else {
-      print("Could not find any video device")
-      setupResult = .configurationFailed
-      session.commitConfiguration()
-      return
-    }
-    
-    // Add video input.
-    do {
-      self.videoDeviceInput = try AVCaptureDeviceInput(device: videoDevice)
-    } catch {
-      print("Could not create video device input: \(error)")
-      setupResult = .configurationFailed
-      session.commitConfiguration()
-      return
-    }
-    
-    // Add a video input
-    guard session.canAddInput(videoDeviceInput) else {
-      print("Could not add video device input to the session")
-      setupResult = .configurationFailed
-      session.commitConfiguration()
-      return
-    }
-    session.addInput(videoDeviceInput)
-    
-    // Add audio input.
-    do {
-      let audioDevice = AVCaptureDevice.default(for: .audio)
-      let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice!)
+  private func configureSession(with videoDevice: AVCaptureDevice,
+                                completion: (() -> Void)? = nil) {
+    sessionQueue.async {
+      self.session.beginConfiguration()
+      self.session.sessionPreset = .photo
       
-      if session.canAddInput(audioDeviceInput) {
-        session.addInput(audioDeviceInput)
-      } else {
-        print("Could not add audio device input to the session")
+      // Remove the existing device input first, since using the front and back camera simultaneously is not supported.
+      if let videoDeviceInput = self.videoDeviceInput {
+        NotificationCenter.default.removeObserver(self,
+                                                  name: .AVCaptureDeviceSubjectAreaDidChange,
+                                                  object: videoDeviceInput)
+        self.session.removeInput(videoDeviceInput)
       }
-    } catch {
-      print("Could not create audio device input: \(error)")
-    }
-    
-    // Add photo output.
-    guard session.canAddOutput(photoOutput) else {
-      print("Could not add photo output to the session")
-      setupResult = .configurationFailed
-      session.commitConfiguration()
-      return
-    }
-    session.addOutput(photoOutput)
-    photoOutput.isHighResolutionCaptureEnabled = true
-    photoOutput.isDepthDataDeliveryEnabled = photoOutput.isDepthDataDeliverySupported
-    
-    // Add a video data output
-    guard session.canAddOutput(videoDataOutput) else {
-      print("Could not add video data output to the session")
-      setupResult = .configurationFailed
-      session.commitConfiguration()
-      return
-    }
-    session.addOutput(videoDataOutput)
-    videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
-    videoDataOutput.setSampleBufferDelegate(self, queue: dataOutputQueue)
-    
-    // Add a depth data output
-    guard session.canAddOutput(depthDataOutput) else {
-      print("Could not add depth data output to the session")
-      setupResult = .configurationFailed
-      session.commitConfiguration()
-      return
-    }
-    session.addOutput(depthDataOutput)
-    depthDataOutput.setDelegate(self, callbackQueue: dataOutputQueue)
-    depthDataOutput.isFilteringEnabled = true
-    if let connection = depthDataOutput.connection(with: .depthData) {
-      connection.isEnabled = photoOutput.isDepthDataDeliverySupported
-    } else {
-      print("No AVCaptureConnection")
-    }
-    
-    if photoOutput.isDepthDataDeliverySupported {
-      // Use an AVCaptureDataOutputSynchronizer to synchronize the video data and depth data outputs.
-      // The first output in the dataOutputs array, in this case the AVCaptureVideoDataOutput, is the "master" output.
-      outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [videoDataOutput, depthDataOutput])
-      outputSynchronizer?.setDelegate(self, queue: dataOutputQueue)
-    } else {
-      outputSynchronizer = nil
-    }
-    
-    // Cap the video framerate at the max depth framerate
-    if photoOutput.isDepthDataDeliverySupported,
-      let frameDuration = videoDevice.activeDepthDataFormat?.videoSupportedFrameRateRanges.first?.minFrameDuration {
+      
+      // Add video input.
       do {
-        try videoDevice.lockForConfiguration()
-        videoDevice.activeVideoMinFrameDuration = frameDuration
-        videoDevice.unlockForConfiguration()
+        self.videoDeviceInput = try AVCaptureDeviceInput(device: videoDevice)
       } catch {
-        print("Could not lock device for configuration: \(error)")
+        print("Could not create video device input: \(error)")
+        self.setupResult = .configurationFailed
+        self.session.commitConfiguration()
+        return
+      }
+      
+      // Add a video input
+      guard self.session.canAddInput(self.videoDeviceInput) else {
+        print("Could not add video device input to the session")
+        self.setupResult = .configurationFailed
+        self.session.commitConfiguration()
+        return
+      }
+      self.session.addInput(self.videoDeviceInput)
+      NotificationCenter.default.addObserver(self,
+                                             selector: #selector(self.subjectAreaDidChange),
+                                             name: .AVCaptureDeviceSubjectAreaDidChange,
+                                             object: self.videoDeviceInput.device)
+      
+      // Add audio input.
+      do {
+        if let audioDevice = AVCaptureDevice.default(for: .audio) {
+          let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
+          if self.session.canAddInput(audioDeviceInput) {
+            self.session.addInput(audioDeviceInput)
+          }
+        }
+      } catch {
+        print("Could not create audio device input: \(error)")
+      }
+      
+      // Add photo output.
+      if !self.session.outputs.contains(self.photoOutput) {
+        guard self.session.canAddOutput(self.photoOutput) else {
+          print("Could not add photo output to the session")
+          self.setupResult = .configurationFailed
+          self.session.commitConfiguration()
+          return
+        }
+        self.session.addOutput(self.photoOutput)
+        self.photoOutput.isHighResolutionCaptureEnabled = true
+        self.photoOutput.isDepthDataDeliveryEnabled = self.photoOutput.isDepthDataDeliverySupported
+      }
+      
+      // Add a video data output
+      if !self.session.outputs.contains(self.videoDataOutput) {
+        guard self.session.canAddOutput(self.videoDataOutput) else {
+          print("Could not add video data output to the session")
+          self.setupResult = .configurationFailed
+          self.session.commitConfiguration()
+          return
+        }
+        self.session.addOutput(self.videoDataOutput)
+        self.videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
+        self.videoDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
+      }
+      
+      // Add a depth data output
+      if !self.session.outputs.contains(self.depthDataOutput) {
+        guard self.session.canAddOutput(self.depthDataOutput) else {
+          print("Could not add depth data output to the session")
+          self.setupResult = .configurationFailed
+          self.session.commitConfiguration()
+          return
+        }
+        self.session.addOutput(self.depthDataOutput)
+        self.depthDataOutput.setDelegate(self, callbackQueue: self.dataOutputQueue)
+        self.depthDataOutput.isFilteringEnabled = true
+        if let connection = self.depthDataOutput.connection(with: .depthData) {
+          connection.isEnabled = self.photoOutput.isDepthDataDeliverySupported
+        } else {
+          print("No AVCaptureConnection")
+        }
+      }
+      
+      if self.photoOutput.isDepthDataDeliverySupported {
+        // Use an AVCaptureDataOutputSynchronizer to synchronize the video data and depth data outputs.
+        // The first output in the dataOutputs array, in this case the AVCaptureVideoDataOutput, is the "master" output.
+        self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoDataOutput, self.depthDataOutput])
+        self.outputSynchronizer?.setDelegate(self, queue: self.dataOutputQueue)
+      } else {
+        self.outputSynchronizer = nil
+      }
+      
+      // Cap the video framerate at the max depth framerate
+      if self.photoOutput.isDepthDataDeliverySupported,
+        let frameDuration = videoDevice.activeDepthDataFormat?.videoSupportedFrameRateRanges.first?.minFrameDuration {
+        do {
+          try videoDevice.lockForConfiguration()
+          videoDevice.activeVideoMinFrameDuration = frameDuration
+          videoDevice.unlockForConfiguration()
+        } catch {
+          print("Could not lock device for configuration: \(error)")
+        }
+      }
+      
+      self.session.commitConfiguration()
+      
+      self.rotate()
+      
+      DispatchQueue.main.async {
+        completion?()
       }
     }
-    
-    session.commitConfiguration()
   }
   
   @objc
@@ -426,97 +445,37 @@ class Camera : NSObject {
       return
     }
     
-    dataOutputQueue.sync {
-      videoDepthConverter.reset()
+    let currentVideoDevice = self.videoDeviceInput.device
+    let currentPosition = currentVideoDevice.position
+    let preferredPosition: AVCaptureDevice.Position
+    let preferredDeviceType: AVCaptureDevice.DeviceType
+    
+    switch currentPosition {
+    case .unspecified, .front:
+      preferredPosition = .back
+      preferredDeviceType = .builtInDualCamera
+      
+    case .back:
+      preferredPosition = .front
+      preferredDeviceType = .builtInTrueDepthCamera
     }
     
-    sessionQueue.async {
-      let currentVideoDevice = self.videoDeviceInput.device
-      let currentPosition = currentVideoDevice.position
-      let currentPhotoOrientation = self.photoOutput.connection(with: .video)!.videoOrientation
-      
-      let preferredPosition: AVCaptureDevice.Position
-      let preferredDeviceType: AVCaptureDevice.DeviceType
-      
-      switch currentPosition {
-      case .unspecified, .front:
-        preferredPosition = .back
-        preferredDeviceType = .builtInDualCamera
-        
-      case .back:
-        preferredPosition = .front
-        preferredDeviceType = .builtInTrueDepthCamera
-      }
-      
-      let devices = self.videoDeviceDiscoverySession.devices
-      var newVideoDevice: AVCaptureDevice? = nil
-      
-      // First, look for a device with both the preferred position and device type. Otherwise, look for a device with only the preferred position.
-      if let device = devices.first(where: { $0.position == preferredPosition && $0.deviceType == preferredDeviceType }) {
-        newVideoDevice = device
-      } else if let device = devices.first(where: { $0.position == preferredPosition }) {
-        newVideoDevice = device
-      }
-      
-      guard let videoDevice = newVideoDevice,
-        let videoDeviceInput = try? AVCaptureDeviceInput(device: videoDevice) else {
-          print("Error occured while creating video device input")
-          return
-      }
-      
-      self.session.beginConfiguration()
-      
-      // Remove the existing device input first, since using the front and back camera simultaneously is not supported.
-      self.session.removeInput(self.videoDeviceInput)
-      
-      if self.session.canAddInput(videoDeviceInput) {
-        NotificationCenter.default.removeObserver(self, name: .AVCaptureDeviceSubjectAreaDidChange, object: currentVideoDevice)
-        NotificationCenter.default.addObserver(self, selector: #selector(self.subjectAreaDidChange), name: .AVCaptureDeviceSubjectAreaDidChange, object: videoDeviceInput.device)
-        
-        self.session.addInput(videoDeviceInput)
-        self.videoDeviceInput = videoDeviceInput
-      } else {
-        self.session.addInput(self.videoDeviceInput)
-      }
-      
-      if let connection = self.movieFileOutput?.connection(with: .video) {
-        if connection.isVideoStabilizationSupported {
-          connection.preferredVideoStabilizationMode = .auto
-        }
-      }
-      
-      self.photoOutput.connection(with: .video)!.videoOrientation = currentPhotoOrientation
-      
-      if self.photoOutput.isDepthDataDeliverySupported {
-        self.photoOutput.isDepthDataDeliveryEnabled = true
-        self.depthDataOutput.connection(with: .depthData)!.isEnabled = true
-        if self.outputSynchronizer == nil {
-          self.outputSynchronizer = AVCaptureDataOutputSynchronizer(dataOutputs: [self.videoDataOutput, self.depthDataOutput])
-          self.outputSynchronizer!.setDelegate(self, queue: self.dataOutputQueue)
-        }
-        
-        // Cap the video framerate at the max depth framerate
-        if let frameDuration = videoDevice.activeDepthDataFormat?.videoSupportedFrameRateRanges.first?.minFrameDuration {
-          do {
-            try videoDevice.lockForConfiguration()
-            videoDevice.activeVideoMinFrameDuration = frameDuration
-            videoDevice.unlockForConfiguration()
-          } catch {
-            print("Could not lock device for configuration: \(error)")
-          }
-        }
-      } else {
-        self.outputSynchronizer = nil
-      }
-      
-      self.session.commitConfiguration()
-      
-      self.rotate()
-      
-      DispatchQueue.main.async {
-        completion()
-      }
+    let devices = self.videoDeviceDiscoverySession.devices
+    var newVideoDevice: AVCaptureDevice? = nil
+    
+    // First, look for a device with both the preferred position and device type. Otherwise, look for a device with only the preferred position.
+    if let device = devices.first(where: { $0.position == preferredPosition && $0.deviceType == preferredDeviceType }) {
+      newVideoDevice = device
+    } else if let device = devices.first(where: { $0.position == preferredPosition }) {
+      newVideoDevice = device
     }
+    
+    guard let videoDevice = newVideoDevice else {
+        print("Error occured while creating video device input")
+        return
+    }
+    
+    self.configureSession(with: videoDevice, completion: completion)
   }
   
   // MARK: Capture Photo
@@ -625,6 +584,7 @@ extension Camera: AVCaptureDepthDataOutputDelegate {
   }
   
   func processDepth(depthData: AVDepthData) {
+    videoDepthConverter.reset()
     if !videoDepthConverter.isPrepared {
       /*
        outputRetainedBufferCountHint is the number of pixel buffers we expect to hold on to from the renderer. This value informs the renderer
