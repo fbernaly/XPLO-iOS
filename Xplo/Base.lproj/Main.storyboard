@@ -131,7 +131,7 @@
                                 <rect key="frame" x="16" y="20" width="50" height="50"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="50" id="KsT-aq-BAg"/>
+                                    <constraint firstAttribute="width" secondItem="Z56-X8-hDD" secondAttribute="height" multiplier="1:1" id="ux0-WI-bdB"/>
                                     <constraint firstAttribute="width" constant="50" id="zvk-j5-TXF"/>
                                 </constraints>
                                 <state key="normal" image="flash_auto">
@@ -297,7 +297,7 @@
     <resources>
         <image name="back" width="33" height="33"/>
         <image name="capture_photo" width="170" height="170"/>
-        <image name="flash_auto" width="33" height="33"/>
+        <image name="flash_auto" width="25" height="25"/>
         <image name="gyro" width="33" height="33"/>
         <image name="photo_album" width="33" height="33"/>
         <image name="share" width="33" height="33"/>
