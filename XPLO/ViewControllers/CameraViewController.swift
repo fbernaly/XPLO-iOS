@@ -31,6 +31,8 @@ class CameraViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
     
+    photoButton.setImage(UIImage(named: "capture_photo")?.withRenderingMode(.alwaysTemplate), for: .normal)
+    
     // Disable UI. The UI is enabled if and only if the session starts running.
     albumButton.isEnabled = false
     cameraButton.isEnabled = false
@@ -283,15 +285,15 @@ class CameraViewController: UIViewController {
     switch camera.flashMode {
     case .auto:
       camera.flashMode = .on
-      flashButton.setTitle("Flash ON", for: .normal)
+      flashButton.setImage(UIImage(named: "flash_on"), for: .normal)
       
     case .on:
       camera.flashMode = .off
-      flashButton.setTitle("Flash OFF", for: .normal)
+      flashButton.setImage(UIImage(named: "flash_off"), for: .normal)
       
     case .off:
       camera.flashMode = .auto
-      flashButton.setTitle("Flash AUTO", for: .normal)
+      flashButton.setImage(UIImage(named: "flash_auto"), for: .normal)
     }
   }
   

@@ -33,6 +33,8 @@
 @property (nonatomic, assign) float adjustedMotionPitch;
 @property (nonatomic, assign) float adjustedMotionRoll;
 @property (nonatomic, assign) matrix_float4x4 matrixDeviceOrientation;
+@property (weak, nonatomic) IBOutlet UIButton *wiggleButton;
+@property (weak, nonatomic) IBOutlet UIButton *gyroButton;
 
 @end
 
@@ -145,26 +147,30 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   [self dismissViewControllerAnimated:YES completion:NULL];
 }
 
+- (IBAction)shareButtonTapped:(UIButton *)sender {
+}
+
+- (IBAction)photoAlbumButtonTapped:(UIButton *)sender {
+  [self _selectPhotoFromLibrary];
+}
+
+- (IBAction)gyroButtonTapped:(UIButton *)sender {
+  sender.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.5];
+  _wiggleButton.backgroundColor = [UIColor clearColor];
+  [self useGyro];
+}
+
+- (IBAction)wiggleButtonTapped:(UIButton *)sender {
+  sender.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.5];
+  _gyroButton.backgroundColor = [UIColor clearColor];
+  [self useTimer];
+}
+
 - (void)didSingleTap:(UITapGestureRecognizer*)gestureRecognizer {
-  _useGyroscope = ! _useGyroscope;
-  
-  if (_useGyroscope) {
-    [_updateTimer invalidate];
-    _updateTimer = nil;
-    
-    _referenceMotionAttitude = nil;
-    [_motionManager startDeviceMotionUpdatesToQueue:[NSOperationQueue mainQueue]
-                                        withHandler:^(CMDeviceMotion *motion, NSError *error) {
-                                          [self updateForDeviceMotion:motion];
-                                        }];
+  if (!_useGyroscope) {
+    [self useGyro];
   } else {
-    [_motionManager stopDeviceMotionUpdates];
-    
-    _updateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 / 30.0
-                                                    target:self
-                                                  selector:@selector(doTimerUpdate)
-                                                  userInfo:nil
-                                                   repeats:YES];
+    [self useTimer];
   }
 }
 
@@ -193,6 +199,29 @@ static const float kEffectMagnificationRangeMax = 30.0f;
     
     lastScale = gestureRecognizer.scale;
   }
+}
+
+#pragma mark Animation
+
+-(void)useGyro {
+  _useGyroscope = YES;
+  [_updateTimer invalidate];
+  _updateTimer = nil;
+  _referenceMotionAttitude = nil;
+  [_motionManager startDeviceMotionUpdatesToQueue:[NSOperationQueue mainQueue]
+                                      withHandler:^(CMDeviceMotion *motion, NSError *error) {
+                                        [self updateForDeviceMotion:motion];
+                                      }];
+}
+
+-(void)useTimer {
+  _useGyroscope = NO;
+  [_motionManager stopDeviceMotionUpdates];
+  _updateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 / 30.0
+                                                  target:self
+                                                selector:@selector(doTimerUpdate)
+                                                userInfo:nil
+                                                 repeats:YES];
 }
 
 -(void)updateForDeviceMotion:(CMDeviceMotion*)deviceMotion {
