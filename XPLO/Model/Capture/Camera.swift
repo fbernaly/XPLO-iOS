@@ -364,10 +364,6 @@ class Camera : NSObject {
      */
     
     NotificationCenter.default.addObserver(self,
-                                           selector: #selector(subjectAreaDidChange),
-                                           name: Notification.Name.AVCaptureDeviceSubjectAreaDidChange,
-                                           object: videoDeviceInput.device)
-    NotificationCenter.default.addObserver(self,
                                            selector: #selector(sessionWasInterrupted),
                                            name: .AVCaptureSessionWasInterrupted,
                                            object: session)
