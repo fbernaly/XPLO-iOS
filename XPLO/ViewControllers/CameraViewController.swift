@@ -35,6 +35,7 @@ class CameraViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
     
+    self.preview.isHidden = true
     // self.renderer = WMRenderer(view: self.preview)
     
     // Disable UI. The UI is enabled if and only if the session starts running.
