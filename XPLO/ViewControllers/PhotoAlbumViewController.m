@@ -40,7 +40,7 @@
 
 @implementation PhotoAlbumViewController
 
-static const float kEffectRotationRate = 3.5f;
+static const float kEffectRotationRate = 5.0f;
 static const float kEffectRotationRadius = 1.5f;
 static const float kEffectGyroRadius = 6.0f;
 static const float kEffectGyroResetEpsilon = 0.01f;

@@ -32,8 +32,6 @@ class CameraViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    photoButton.setImage(UIImage(named: "capture_photo")?.withRenderingMode(.alwaysTemplate), for: .normal)
-    
     // Disable UI. The UI is enabled if and only if the session starts running.
     albumButton.isEnabled = false
     cameraButton.isEnabled = false

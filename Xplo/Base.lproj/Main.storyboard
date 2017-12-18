@@ -67,7 +67,7 @@
                                 </connections>
                             </button>
                             <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="20" translatesAutoresizingMaskIntoConstraints="NO" id="SBu-In-K5F">
-                                <rect key="frame" x="47.5" y="587" width="280" height="60"/>
+                                <rect key="frame" x="87.5" y="587" width="200" height="60"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7Tl-W6-S0j">
                                         <rect key="frame" x="0.0" y="5" width="50" height="50"/>
@@ -83,8 +83,8 @@
                                             <segue destination="ZXF-vM-rxA" kind="show" id="aCY-YZ-7RV"/>
                                         </connections>
                                     </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="jXM-bx-0eU">
-                                        <rect key="frame" x="70" y="0.0" width="60" height="60"/>
+                                    <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="jXM-bx-0eU">
+                                        <rect key="frame" x="60" y="0.0" width="60" height="60"/>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="60" id="1QJ-7V-Oux"/>
@@ -98,7 +98,7 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="1ND-qE-qTI">
-                                        <rect key="frame" x="150" y="0.0" width="60" height="60"/>
+                                        <rect key="frame" x="70" y="0.0" width="60" height="60"/>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="60" id="Cgk-qK-cqZ"/>
@@ -112,7 +112,7 @@
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Wcu-Zu-xtD">
-                                        <rect key="frame" x="230" y="5" width="50" height="50"/>
+                                        <rect key="frame" x="150" y="5" width="50" height="50"/>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
                                             <constraint firstAttribute="width" secondItem="Wcu-Zu-xtD" secondAttribute="height" multiplier="1:1" id="CEC-9V-IIz"/>
@@ -317,10 +317,10 @@
         <image name="filter" width="25" height="25"/>
         <image name="flash_auto" width="25" height="25"/>
         <image name="gyro" width="33" height="33"/>
-        <image name="photo_album" width="33" height="33"/>
+        <image name="photo_album" width="32" height="32"/>
         <image name="share" width="33" height="33"/>
         <image name="start_recording" width="170" height="170"/>
-        <image name="swap_camera" width="33" height="33"/>
+        <image name="swap_camera" width="32" height="32"/>
         <image name="wiggle" width="33" height="33"/>
     </resources>
     <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
