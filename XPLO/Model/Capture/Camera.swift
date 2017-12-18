@@ -564,7 +564,9 @@ extension Camera: AVCaptureDataOutputSynchronizerDelegate {
       }
     }
     
-    self.onStream?(videoSampleBuffer, depthData)
+    DispatchQueue.main.async {
+      self.onStream?(videoSampleBuffer, depthData)
+    }
   }
   
 }
