@@ -23,18 +23,14 @@
 @interface PhotoAlbumViewController()
 
 @property (nonatomic, strong) WMRenderer *renderer;
-@property (nonatomic, strong) CMMotionManager *motionManager;
 @property (nonatomic, assign) BOOL requestPhotoLibrary;
 @property (nonatomic, assign) BOOL isPhotoSelected;
 @property (nonatomic, strong) NSTimer *updateTimer;
-@property (nonatomic, assign) BOOL useGyroscope;
+@property (nonatomic, assign) BOOL manual;
 @property (nonatomic, assign) float effectRotation;
-@property (nonatomic, strong) CMAttitude *referenceMotionAttitude;
-@property (nonatomic, assign) float adjustedMotionPitch;
-@property (nonatomic, assign) float adjustedMotionRoll;
 @property (nonatomic, assign) matrix_float4x4 matrixDeviceOrientation;
 @property (weak, nonatomic) IBOutlet UIButton *wiggleButton;
-@property (weak, nonatomic) IBOutlet UIButton *gyroButton;
+@property (weak, nonatomic) IBOutlet UIButton *manualButton;
 
 @end
 
@@ -42,9 +38,6 @@
 
 static const float kEffectRotationRate = 5.0f;
 static const float kEffectRotationRadius = 1.5f;
-static const float kEffectGyroRadius = 6.0f;
-static const float kEffectGyroResetEpsilon = 0.01f;
-static const float kEffectGyroResetRate = 0.005f;
 static const float kEffectMagnificationRate = 0.01f;
 static const float kEffectMagnificationMinFactor = 0.90f;
 static const float kEffectMagnificationRangeMin = 0.0f;
@@ -53,9 +46,8 @@ static const float kEffectMagnificationRangeMax = 30.0f;
 - (void)viewDidLoad {
   _isPhotoSelected = NO;
   _requestPhotoLibrary = YES;
-  _useGyroscope = NO;
+  _manual = NO;
   _effectRotation = 0.0f;
-  _referenceMotionAttitude = nil;
   _matrixDeviceOrientation = matrix_identity_float4x4;
   
   [super viewDidLoad];
@@ -65,10 +57,6 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   }];
   
   _renderer = [[WMRenderer alloc] initWithView:(MTKView *)self.view];
-  
-  // Gyroscope
-  _motionManager = [[CMMotionManager alloc] init];
-  _motionManager.deviceMotionUpdateInterval = 1.0 / 60.0;
   
   // Update timer
   _updateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 / 60.0
@@ -88,6 +76,11 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   
   UIPinchGestureRecognizer *pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(didPinch:)];
   [self.view addGestureRecognizer:pinchRecognizer];
+  
+  UIPanGestureRecognizer *panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(didPan:)];
+  [panRecognizer setMinimumNumberOfTouches:1];
+  [panRecognizer setMaximumNumberOfTouches:1];
+  [self.view addGestureRecognizer:panRecognizer];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -137,8 +130,6 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   }
   
   _matrixDeviceOrientation = matrix_from_rotation(deviceOrientationRadAngle, 0.0f, 0.0f, 1.0f);
-  
-  _referenceMotionAttitude = nil;
 }
 
 #pragma mark Selectors
@@ -154,21 +145,27 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   [self _selectPhotoFromLibrary];
 }
 
-- (IBAction)gyroButtonTapped:(UIButton *)sender {
+- (IBAction)manualButtonTapped:(UIButton *)sender {
+  if (sender.isSelected) return;
+  sender.selected = YES;
   sender.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.5];
   _wiggleButton.backgroundColor = [UIColor clearColor];
-  [self useGyro];
+  _wiggleButton.selected = NO;
+  [self useManual];
 }
 
 - (IBAction)wiggleButtonTapped:(UIButton *)sender {
+  if (sender.isSelected) return;
+  sender.selected = YES;
   sender.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.5];
-  _gyroButton.backgroundColor = [UIColor clearColor];
+  _manualButton.backgroundColor = [UIColor clearColor];
+  _manualButton.selected = NO;
   [self useTimer];
 }
 
 - (void)didSingleTap:(UITapGestureRecognizer*)gestureRecognizer {
-  if (!_useGyroscope) {
-    [self useGyro];
+  if (!_manual) {
+    [self useManual];
   } else {
     [self useTimer];
   }
@@ -201,22 +198,31 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   }
 }
 
+- (void)didPan:(UIPanGestureRecognizer*)gestureRecognizer {
+  CGPoint point = [gestureRecognizer translationInView: self.view];
+  [gestureRecognizer setTranslation:CGPointZero inView: self.view];
+  WMCamera *camera = [_renderer copyCamera];
+  
+  float pan = (float)point.x / 180.0f * M_PI;
+  float tilt = (float)point.y / 180.0f * M_PI;
+  
+  [camera setPan: camera.pan + pan];
+  [camera setTilt: camera.tilt + tilt];
+
+  [_renderer setCamera:camera];
+}
+
 #pragma mark Animation
 
--(void)useGyro {
-  _useGyroscope = YES;
+-(void)useManual {
+  _manual = YES;
   [_updateTimer invalidate];
   _updateTimer = nil;
-  _referenceMotionAttitude = nil;
-  [_motionManager startDeviceMotionUpdatesToQueue:[NSOperationQueue mainQueue]
-                                      withHandler:^(CMDeviceMotion *motion, NSError *error) {
-                                        [self updateForDeviceMotion:motion];
-                                      }];
+  _effectRotation = 0.0f;
 }
 
 -(void)useTimer {
-  _useGyroscope = NO;
-  [_motionManager stopDeviceMotionUpdates];
+  _manual = NO;
   _updateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 / 30.0
                                                   target:self
                                                 selector:@selector(doTimerUpdate)
@@ -224,46 +230,11 @@ static const float kEffectMagnificationRangeMax = 30.0f;
                                                  repeats:YES];
 }
 
--(void)updateForDeviceMotion:(CMDeviceMotion*)deviceMotion {
-  WMCamera *camera = [_renderer copyCamera];
-  
-  if ( ! _referenceMotionAttitude) {
-    _referenceMotionAttitude = [deviceMotion.attitude copy];
-    _adjustedMotionPitch = 0.0f;
-    _adjustedMotionRoll = 0.0f;
-  }
-  
-  CMAttitude *attitude = _motionManager.deviceMotion.attitude;
-  [attitude multiplyByInverseOfAttitude:_referenceMotionAttitude];
-  
-  float roll  = attitude.roll - _adjustedMotionRoll;
-  float pitch = attitude.pitch - _adjustedMotionPitch;
-  
-  if (fabs(roll) > kEffectGyroResetEpsilon) {
-    _adjustedMotionRoll += kEffectGyroResetRate * ((roll > 0.0f) ? 1.0f : -1.0f);
-  }
-  
-  if (fabs(pitch) > kEffectGyroResetEpsilon) {
-    _adjustedMotionPitch += kEffectGyroResetRate * ((pitch > 0.0f) ? 1.0f : -1.0f);
-  }
-  
-  const float rx = sinf(roll) * kEffectGyroRadius;
-  const float ry = sinf(-pitch) * kEffectGyroRadius;
-  
-  vector_float4 vrxy = matrix_multiply(_matrixDeviceOrientation, vector4(rx, ry, 0.0f, 1.0f));
-  [camera setXPosition:vrxy.x / vrxy.w];
-  [camera setYPosition:vrxy.y / vrxy.w];
-  
-  [_renderer setCamera:camera];
-}
-
 -(void)doTimerUpdate {
   WMCamera *camera = [_renderer copyCamera];
   
   _effectRotation += kEffectRotationRate;
-  if (fabs(_effectRotation) >= 360.0f) {
-    _effectRotation -= 360.0f;
-  }
+  _effectRotation = (float)((int)_effectRotation%360);
   
   const float theta = _effectRotation / 180.0f * M_PI;
   const float rx = cosf(-theta) * kEffectRotationRadius;

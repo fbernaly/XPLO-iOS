@@ -7,9 +7,11 @@
 //
 
 import UIKit
+import AVFoundation
 
 class CameraViewController: UIViewController {
   
+  @IBOutlet weak var preview: MTKView!
   @IBOutlet weak var mainPreview: PreviewMetalView!
   @IBOutlet weak var secondaryPreview: PreviewMetalView!
   @IBOutlet weak var cameraUnavailableLabel: UILabel!
@@ -26,11 +28,14 @@ class CameraViewController: UIViewController {
   
   let camera = Camera()
   var togglePreview = false
+  var renderer: WMRenderer?
   
   // MARK: View Controller Life Cycle
   
   override func viewDidLoad() {
     super.viewDidLoad()
+    
+    // self.renderer = WMRenderer(view: self.preview)
     
     // Disable UI. The UI is enabled if and only if the session starts running.
     albumButton.isEnabled = false
@@ -169,40 +174,113 @@ class CameraViewController: UIViewController {
         self.secondaryPreview.rotation = rotation
       }
     }
-    camera.onImageStreamed = { (buffer) in
-      if self.togglePreview {
-        self.secondaryPreview.pixelBuffer = buffer
-      } else {
-        self.mainPreview.pixelBuffer = buffer
+    camera.onStream = { (videoSampleBuffer, depthData) in
+      let interfaceOrientation = UIApplication.shared.statusBarOrientation
+      
+      if let sampleBuffer = videoSampleBuffer,
+        let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+        if self.togglePreview {
+          self.secondaryPreview.pixelBuffer = buffer
+        } else {
+          self.mainPreview.pixelBuffer = buffer
+        }
+        
+        // update constraints
+        if interfaceOrientation.isPortrait {
+          self.mainPreviewHeightConstraint.constant = self.mainPreview.bounds.size.width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
+        } else {
+          self.mainPreviewHeightConstraint.constant = self.view.bounds.size.height
+        }
       }
       
-      // update constraints
-      let interfaceOrientation = UIApplication.shared.statusBarOrientation
-      if interfaceOrientation.isPortrait {
-        self.mainPreviewHeightConstraint.constant = self.mainPreview.bounds.size.width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
-      } else {
-        self.mainPreviewHeightConstraint.constant = self.view.bounds.size.height
-      }
-    }
-    camera.onDepthStreamed = { (buffer) in
-      if self.togglePreview {
-        self.mainPreview.pixelBuffer = buffer
-      } else {
-        self.secondaryPreview.pixelBuffer = buffer
+      if let depthData = depthData {
+        let videoDepthConverter = DepthToGrayscaleConverter()
+        videoDepthConverter.reset()
+        if !videoDepthConverter.isPrepared {
+          /*
+           outputRetainedBufferCountHint is the number of pixel buffers we expect to hold on to from the renderer. This value informs the renderer
+           how to size its buffer pool and how many pixel buffers to preallocate. Allow 2 frames of latency to cover the dispatch_async call.
+           */
+          var depthFormatDescription: CMFormatDescription?
+          CMVideoFormatDescriptionCreateForImageBuffer(kCFAllocatorDefault, depthData.depthDataMap, &depthFormatDescription)
+          videoDepthConverter.prepare(with: depthFormatDescription!, outputRetainedBufferCountHint: 2)
+        }
+        
+        guard let buffer = videoDepthConverter.render(pixelBuffer: depthData.depthDataMap) else {
+          print("Unable to process depth")
+          return
+        }
+        
+        if self.togglePreview {
+          self.mainPreview.pixelBuffer = buffer
+        } else {
+          self.secondaryPreview.pixelBuffer = buffer
+        }
+        
+        // update constraints
+        if interfaceOrientation.isPortrait {
+          let width: CGFloat = 100
+          self.secondaryPreviewWidthConstraint.constant = width
+          self.secondaryPreviewHeightConstraint.constant = width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
+        } else {
+          let heigth: CGFloat = 130
+          self.secondaryPreviewHeightConstraint.constant = heigth
+          self.secondaryPreviewWidthConstraint.constant = heigth * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
+        }
       }
       
-      // update constraints
-      let interfaceOrientation = UIApplication.shared.statusBarOrientation
-      if interfaceOrientation.isPortrait {
-        let width: CGFloat = 100
-        self.secondaryPreviewWidthConstraint.constant = width
-        self.secondaryPreviewHeightConstraint.constant = width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
-      } else {
-        let heigth: CGFloat = 130
-        self.secondaryPreviewHeightConstraint.constant = heigth
-        self.secondaryPreviewWidthConstraint.constant = heigth * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
+      if let depthData = depthData,
+        let cameraCalibrationData = depthData.cameraCalibrationData,
+        let sampleBuffer = videoSampleBuffer,
+        let cgImage = self.cgImageFromSampleBuffer(sampleBuffer) {
+        let intrinsicMatrix = matrix_transpose(cameraCalibrationData.intrinsicMatrix)
+        let intrinsicMatrixReferenceDimensions = cameraCalibrationData.intrinsicMatrixReferenceDimensions
+        let texture = UIImage(cgImage: cgImage)
+        
+        let imageOrientationRadAngle: Float = Float(M_PI)
+        
+        self.renderer?.setTextureOrientation(imageOrientationRadAngle)
+        self.renderer?.setDepthMapOrientation(-imageOrientationRadAngle)
+        self.renderer?.setDepthMap(depthData.depthDataMap,
+                                   intrinsicMatrix: intrinsicMatrix,
+                                   intrinsicMatrixReferenceDimensions: intrinsicMatrixReferenceDimensions)
+        self.renderer?.setTexture(texture)
       }
     }
+  }
+  
+  func cgImageFromSampleBuffer(_ sampleBuffer : CMSampleBuffer) -> CGImage? {
+    // Get a CMSampleBuffer's Core Video image buffer for the media data
+    guard let  imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+      return nil
+    }
+    
+    // Lock the base address of the pixel buffer
+    CVPixelBufferLockBaseAddress(imageBuffer, CVPixelBufferLockFlags.readOnly)
+    
+    // Get the number of bytes per row for the pixel buffer
+    let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer)
+    
+    // Get the number of bytes per row for the pixel buffer
+    let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer)
+    // Get the pixel buffer width and height
+    let width = CVPixelBufferGetWidth(imageBuffer)
+    let height = CVPixelBufferGetHeight(imageBuffer)
+    
+    // Create a device-dependent RGB color space
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    
+    // Create a bitmap graphics context with the sample buffer data
+    var bitmapInfo: UInt32 = CGBitmapInfo.byteOrder32Little.rawValue
+    bitmapInfo |= CGImageAlphaInfo.premultipliedFirst.rawValue & CGBitmapInfo.alphaInfoMask.rawValue
+    //let bitmapInfo: UInt32 = CGBitmapInfo.alphaInfoMask.rawValue
+    let context = CGContext.init(data: baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo)
+    // Create a Quartz image from the pixel data in the bitmap graphics context
+    let quartzImage = context?.makeImage()
+    // Unlock the pixel buffer
+    CVPixelBufferUnlockBaseAddress(imageBuffer, CVPixelBufferLockFlags.readOnly)
+    
+    return quartzImage
   }
   
   // MARK: Device Configuration

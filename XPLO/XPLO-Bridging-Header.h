@@ -4,3 +4,7 @@
 
 #import "PhotoAlbumViewController.h"
 #import "minMaxFromBuffer.h"
+#import "WMUtilities.h"
+#import "WMMatrixUtilities.h"
+#import "WMRenderer.h"
+#import "WMCamera.h"

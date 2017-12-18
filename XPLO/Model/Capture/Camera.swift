@@ -21,8 +21,7 @@ class Camera : NSObject {
   var onSessionInterrupted: ((AVCaptureSession.InterruptionReason) -> Void)?
   var onSessionInterruptionEnded: (() -> Void)?
   var onRotation: (() -> Void)?
-  var onImageStreamed: ((CVPixelBuffer) -> Void)?
-  var onDepthStreamed: ((CVPixelBuffer) -> Void)?
+  var onStream: ((CMSampleBuffer?, AVDepthData?) -> Void)?
   
   let session = AVCaptureSession()
   let photoOutput = AVCapturePhotoOutput()
@@ -269,7 +268,6 @@ class Camera : NSObject {
         self.session.addOutput(self.videoDataOutput)
       }
       self.videoDataOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
-      self.videoDataOutput.setSampleBufferDelegate(self, queue: self.dataOutputQueue)
       
       // Add a depth data output
       if !self.session.outputs.contains(self.depthDataOutput) {
@@ -281,7 +279,6 @@ class Camera : NSObject {
         }
         self.session.addOutput(self.depthDataOutput)
       }
-      self.depthDataOutput.setDelegate(self, callbackQueue: self.dataOutputQueue)
       self.depthDataOutput.isFilteringEnabled = true
       if let connection = self.depthDataOutput.connection(with: .depthData) {
         connection.isEnabled = self.photoOutput.isDepthDataDeliverySupported
@@ -546,81 +543,28 @@ class Camera : NSObject {
   
 }
 
-// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
-
-extension Camera: AVCaptureVideoDataOutputSampleBufferDelegate {
-  
-  func captureOutput(_ output: AVCaptureOutput,
-                     didOutput sampleBuffer: CMSampleBuffer,
-                     from connection: AVCaptureConnection) {
-    processVideo(sampleBuffer: sampleBuffer)
-  }
-  
-  func processVideo(sampleBuffer: CMSampleBuffer) {
-    guard let videoPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
-      else {
-        return
-    }
-    DispatchQueue.main.async {
-      self.onImageStreamed?(videoPixelBuffer)
-    }
-  }
-  
-}
-
-// MARK: - AVCaptureDepthDataOutputDelegate
-
-extension Camera: AVCaptureDepthDataOutputDelegate {
-  
-  func depthDataOutput(_ depthDataOutput: AVCaptureDepthDataOutput,
-                       didOutput depthData: AVDepthData,
-                       timestamp: CMTime,
-                       connection: AVCaptureConnection) {
-    processDepth(depthData: depthData)
-  }
-  
-  func processDepth(depthData: AVDepthData) {
-    videoDepthConverter.reset()
-    if !videoDepthConverter.isPrepared {
-      /*
-       outputRetainedBufferCountHint is the number of pixel buffers we expect to hold on to from the renderer. This value informs the renderer
-       how to size its buffer pool and how many pixel buffers to preallocate. Allow 2 frames of latency to cover the dispatch_async call.
-       */
-      var depthFormatDescription: CMFormatDescription?
-      CMVideoFormatDescriptionCreateForImageBuffer(kCFAllocatorDefault, depthData.depthDataMap, &depthFormatDescription)
-      videoDepthConverter.prepare(with: depthFormatDescription!, outputRetainedBufferCountHint: 2)
-    }
-    
-    guard let depthPixelBuffer = videoDepthConverter.render(pixelBuffer: depthData.depthDataMap) else {
-      print("Unable to process depth")
-      return
-    }
-    DispatchQueue.main.async {
-      self.onDepthStreamed?(depthPixelBuffer)
-    }
-  }
-  
-}
-
 // MARK: - AVCaptureDataOutputSynchronizerDelegate
 
 extension Camera: AVCaptureDataOutputSynchronizerDelegate {
   
   func dataOutputSynchronizer(_ synchronizer: AVCaptureDataOutputSynchronizer,
                               didOutput synchronizedDataCollection: AVCaptureSynchronizedDataCollection) {
+    var depthData: AVDepthData? = nil
+    var videoSampleBuffer: CMSampleBuffer? = nil
+    
     if let syncedDepthData: AVCaptureSynchronizedDepthData = synchronizedDataCollection.synchronizedData(for: depthDataOutput) as? AVCaptureSynchronizedDepthData {
       if !syncedDepthData.depthDataWasDropped {
-        let depthData = syncedDepthData.depthData
-        processDepth(depthData: depthData)
+        depthData = syncedDepthData.depthData
       }
     }
     
     if let syncedVideoData: AVCaptureSynchronizedSampleBufferData = synchronizedDataCollection.synchronizedData(for: videoDataOutput) as? AVCaptureSynchronizedSampleBufferData {
       if !syncedVideoData.sampleBufferWasDropped {
-        let videoSampleBuffer = syncedVideoData.sampleBuffer
-        processVideo(sampleBuffer: videoSampleBuffer)
+        videoSampleBuffer = syncedVideoData.sampleBuffer
       }
     }
+    
+    self.onStream?(videoSampleBuffer, depthData)
   }
   
 }
