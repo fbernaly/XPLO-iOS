@@ -109,14 +109,14 @@ class Camera : NSObject {
       var captureDevice: AVCaptureDevice?
       
       // Choose the back dual camera if available, otherwise default to a wide angle camera.
-      if let dualCameraDevice = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back) {
+      if let trueDepthCameraDevice = AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front) {
+        // If front camera is not available, default to true depth camera.
+        captureDevice = trueDepthCameraDevice
+      } else if let dualCameraDevice = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back) {
         captureDevice = dualCameraDevice
       } else if let backCameraDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) {
         // If the back dual camera is not available, default to the back wide angle camera.
         captureDevice = backCameraDevice
-      } else if let trueDepthCameraDevice = AVCaptureDevice.default(.builtInTrueDepthCamera, for: .video, position: .front) {
-        // If front camera is not available, default to true depth camera.
-        captureDevice = trueDepthCameraDevice
       } else if let frontCameraDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) {
         /*
          In some cases where users break their phones, the back wide angle camera is not available.
