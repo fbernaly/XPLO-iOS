@@ -110,29 +110,10 @@ extension PhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
       return
     }
     
-    PHPhotoLibrary.requestAuthorization { status in
-      if status == .authorized {
-        PHPhotoLibrary.shared().performChanges({
-          let options = PHAssetResourceCreationOptions()
-          let creationRequest = PHAssetCreationRequest.forAsset()
-          options.uniformTypeIdentifier = self.requestedPhotoSettings.processedFileType.map { $0.rawValue }
-          creationRequest.addResource(with: .photo, data: photoData, options: options)
-          
-          if let livePhotoCompanionMovieURL = self.livePhotoCompanionMovieURL {
-            let livePhotoCompanionMovieFileResourceOptions = PHAssetResourceCreationOptions()
-            livePhotoCompanionMovieFileResourceOptions.shouldMoveFile = true
-            creationRequest.addResource(with: .pairedVideo, fileURL: livePhotoCompanionMovieURL, options: livePhotoCompanionMovieFileResourceOptions)
-          }
-          
-        }, completionHandler: { _, error in
-          if let error = error {
-            print("Error occurered while saving photo to photo library: \(error)")
-          }
-          self.didFinish()
-        })
-      } else {
-        self.didFinish()
-      }
+    PHPhotoLibrary.shared().savePhoto(photoData: photoData,
+                                      albumName: "XPLO",
+                                      requestedPhotoSettings: self.requestedPhotoSettings) { (_) in
+                                        self.didFinish()
     }
   }
   
