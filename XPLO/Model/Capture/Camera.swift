@@ -187,7 +187,7 @@ class Camera : NSObject {
     DispatchQueue.main.async {
       let interfaceOrientation = UIApplication.shared.statusBarOrientation
       if let photoOrientation = AVCaptureVideoOrientation(rawValue: interfaceOrientation.rawValue) {
-        self.photoOutput.connection(with: .video)!.videoOrientation = photoOrientation
+        self.photoOutput.connection(with: .video)?.videoOrientation = photoOrientation
       }
       self.onRotation?()
     }
