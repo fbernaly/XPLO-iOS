@@ -24,7 +24,6 @@
 		0EEDB3ED1FD7240500EDE147 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0EEDB3EB1FD7240500EDE147 /* Main.storyboard */; };
 		0EEDB3EF1FD7240500EDE147 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0EEDB3EE1FD7240500EDE147 /* Assets.xcassets */; };
 		0EEDB3F21FD7240500EDE147 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0EEDB3F01FD7240500EDE147 /* LaunchScreen.storyboard */; };
-		0EEDB4001FD724AC00EDE147 /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FA1FD724AC00EDE147 /* PreviewView.swift */; };
 		0EEDB4011FD724AC00EDE147 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FC1FD724AC00EDE147 /* CameraViewController.swift */; };
 		0EEDB4021FD724AC00EDE147 /* PhotoCaptureProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */; };
 		0EEDB4031FD724AC00EDE147 /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FF1FD724AC00EDE147 /* Camera.swift */; };
@@ -59,7 +58,6 @@
 		0EEDB3EE1FD7240500EDE147 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0EEDB3F11FD7240500EDE147 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		0EEDB3F31FD7240500EDE147 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0EEDB3FA1FD724AC00EDE147 /* PreviewView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PreviewView.swift; sourceTree = "<group>"; };
 		0EEDB3FC1FD724AC00EDE147 /* CameraViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
 		0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoCaptureProcessor.swift; sourceTree = "<group>"; };
 		0EEDB3FF1FD724AC00EDE147 /* Camera.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
@@ -184,7 +182,6 @@
 		0EEDB3F91FD724AC00EDE147 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				0EEDB3FA1FD724AC00EDE147 /* PreviewView.swift */,
 				0E1304AB1FD8E2C0007BF97E /* PreviewMetalView.swift */,
 			);
 			path = Views;
@@ -291,7 +288,6 @@
 				0E08719D1FD7C04B00ECE059 /* WMRenderer.m in Sources */,
 				0E1304B31FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift in Sources */,
 				0EEDB3E81FD7240500EDE147 /* AppDelegate.swift in Sources */,
-				0EEDB4001FD724AC00EDE147 /* PreviewView.swift in Sources */,
 				0E1304B71FD8FE4D007BF97E /* minMaxFromBuffer.m in Sources */,
 				0E0871851FD786F900ECE059 /* VideoRecordingProcessor.swift in Sources */,
 				0E08719E1FD7C04B00ECE059 /* Shaders.metal in Sources */,
