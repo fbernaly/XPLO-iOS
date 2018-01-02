@@ -18,7 +18,6 @@
 		0E1304AC1FD8E2C0007BF97E /* PreviewMetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304AB1FD8E2C0007BF97E /* PreviewMetalView.swift */; };
 		0E1304AF1FD8FD82007BF97E /* DepthToGrayscale.metal in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304AE1FD8FD82007BF97E /* DepthToGrayscale.metal */; };
 		0E1304B31FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304B11FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift */; };
-		0E1304B41FD8FDA2007BF97E /* FilterRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304B21FD8FDA2007BF97E /* FilterRenderer.swift */; };
 		0E1304B71FD8FE4D007BF97E /* minMaxFromBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304B51FD8FE4D007BF97E /* minMaxFromBuffer.m */; };
 		0E78B8FF1FEC4C9500EDCED7 /* PHPhotoLibrary+Save.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */; };
 		0EEDB3E81FD7240500EDE147 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3E71FD7240500EDE147 /* AppDelegate.swift */; };
@@ -51,7 +50,6 @@
 		0E1304AB1FD8E2C0007BF97E /* PreviewMetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewMetalView.swift; sourceTree = "<group>"; };
 		0E1304AE1FD8FD82007BF97E /* DepthToGrayscale.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = DepthToGrayscale.metal; sourceTree = "<group>"; };
 		0E1304B11FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DepthToGrayscaleConverter.swift; sourceTree = "<group>"; };
-		0E1304B21FD8FDA2007BF97E /* FilterRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FilterRenderer.swift; sourceTree = "<group>"; };
 		0E1304B51FD8FE4D007BF97E /* minMaxFromBuffer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = minMaxFromBuffer.m; sourceTree = "<group>"; };
 		0E1304B61FD8FE4D007BF97E /* minMaxFromBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = minMaxFromBuffer.h; sourceTree = "<group>"; };
 		0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PHPhotoLibrary+Save.swift"; sourceTree = "<group>"; };
@@ -140,15 +138,14 @@
 			path = Shaders;
 			sourceTree = "<group>";
 		};
-		0E1304B01FD8FD99007BF97E /* Depth */ = {
+		0E1304B01FD8FD99007BF97E /* Depth To Gray */ = {
 			isa = PBXGroup;
 			children = (
 				0E1304B11FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift */,
-				0E1304B21FD8FDA2007BF97E /* FilterRenderer.swift */,
 				0E1304B61FD8FE4D007BF97E /* minMaxFromBuffer.h */,
 				0E1304B51FD8FE4D007BF97E /* minMaxFromBuffer.m */,
 			);
-			path = Depth;
+			path = "Depth To Gray";
 			sourceTree = "<group>";
 		};
 		0EEDB3DB1FD7240500EDE147 = {
@@ -206,8 +203,8 @@
 		0EEDB3FD1FD724AC00EDE147 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				0E1304B01FD8FD99007BF97E /* Depth */,
 				0E0871A31FD7C14E00ECE059 /* Capture */,
+				0E1304B01FD8FD99007BF97E /* Depth To Gray */,
 				0E08718D1FD7C04B00ECE059 /* WiggleMe */,
 			);
 			path = Model;
@@ -294,7 +291,6 @@
 				0E08719D1FD7C04B00ECE059 /* WMRenderer.m in Sources */,
 				0E1304B31FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift in Sources */,
 				0EEDB3E81FD7240500EDE147 /* AppDelegate.swift in Sources */,
-				0E1304B41FD8FDA2007BF97E /* FilterRenderer.swift in Sources */,
 				0EEDB4001FD724AC00EDE147 /* PreviewView.swift in Sources */,
 				0E1304B71FD8FE4D007BF97E /* minMaxFromBuffer.m in Sources */,
 				0E0871851FD786F900ECE059 /* VideoRecordingProcessor.swift in Sources */,

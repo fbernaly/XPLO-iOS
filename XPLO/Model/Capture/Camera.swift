@@ -46,7 +46,6 @@ class Camera : NSObject {
     return uniqueDevicePositions.count > 1
   }
   
-  private let videoDepthConverter = DepthToGrayscaleConverter()
   private var capturingLivePhotoCount: Int = 0
   private var inProgressPhotoCaptureDelegates = [Int64: PhotoCaptureProcessor]()
   private var videoRecordingProcessor: VideoRecordingProcessor?
