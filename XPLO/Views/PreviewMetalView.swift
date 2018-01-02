@@ -75,44 +75,6 @@ class PreviewMetalView: MTKView {
   
   private var internalBounds: CGRect!
   
-  private var textureTranform: CGAffineTransform?
-  
-  func texturePointForView(point: CGPoint) -> CGPoint? {
-    var result: CGPoint?
-    guard let transform = textureTranform else {
-      return result
-    }
-    let transformPoint = point.applying(transform)
-    
-    if CGRect(origin: .zero, size: CGSize(width: textureWidth, height: textureHeight)).contains(transformPoint) {
-      result = transformPoint
-    } else {
-      print("Invalid point \(point) result point \(transformPoint)")
-    }
-    
-    return result
-  }
-  
-  func viewPointForTexture(point: CGPoint) -> CGPoint? {
-    var result: CGPoint?
-    guard let transform = textureTranform?.inverted() else {
-      return result
-    }
-    let transformPoint = point.applying(transform)
-    
-    if internalBounds.contains(transformPoint) {
-      result = transformPoint
-    } else {
-      print("Invalid point \(point) result point \(transformPoint)")
-    }
-    
-    return result
-  }
-  
-  func flushTextureCache() {
-    textureCache = nil
-  }
-  
   private func setupTransform(width: Int, height: Int, mirroring: Bool, rotation: Rotation) {
     var scaleX: Float = 1.0
     var scaleY: Float = 1.0
@@ -195,36 +157,6 @@ class PreviewMetalView: MTKView {
     }
     textCoordBuffer = device?.makeBuffer(bytes: textData, length: textData.count * MemoryLayout<Float>.size, options: [])
     
-    // Calculate the transform from texture coordinates to view coordinates
-    var transform = CGAffineTransform.identity
-    if textureMirroring {
-      transform = transform.concatenating(CGAffineTransform(scaleX: -1, y: 1))
-      transform = transform.concatenating(CGAffineTransform(translationX: CGFloat(textureWidth), y: 0))
-    }
-    
-    switch textureRotation {
-    case .rotate0Degrees:
-      transform = transform.concatenating(CGAffineTransform(rotationAngle: CGFloat(0)))
-      
-    case .rotate180Degrees:
-      transform = transform.concatenating(CGAffineTransform(rotationAngle: CGFloat(Double.pi)))
-      transform = transform.concatenating(CGAffineTransform(translationX: CGFloat(textureWidth), y: CGFloat(textureHeight)))
-      
-    case .rotate90Degrees:
-      transform = transform.concatenating(CGAffineTransform(rotationAngle: CGFloat(Double.pi) / 2))
-      transform = transform.concatenating(CGAffineTransform(translationX: CGFloat(textureHeight), y: 0))
-      
-    case .rotate270Degrees:
-      transform = transform.concatenating(CGAffineTransform(rotationAngle: 3 * CGFloat(Double.pi) / 2))
-      transform = transform.concatenating(CGAffineTransform(translationX: 0, y: CGFloat(textureWidth)))
-    }
-    
-    transform = transform.concatenating(CGAffineTransform(scaleX: CGFloat(resizeAspect), y: CGFloat(resizeAspect)))
-    let tranformRect = CGRect(origin: .zero, size: CGSize(width: textureWidth, height: textureHeight)).applying(transform)
-    let tx = (internalBounds.size.width - tranformRect.size.width) / 2
-    let ty = (internalBounds.size.height - tranformRect.size.height) / 2
-    transform = transform.concatenating(CGAffineTransform(translationX: tx, y: ty))
-    textureTranform = transform.inverted()
   }
   
   required init(coder: NSCoder) {

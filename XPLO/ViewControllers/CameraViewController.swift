@@ -308,20 +308,6 @@ class CameraViewController: UIViewController {
     }
   }
   
-  @IBAction func focusAndExposeTap(_ gesture: UITapGestureRecognizer) {
-    let location = gesture.location(in: mainPreview)
-    guard let texturePoint = mainPreview.texturePointForView(point: location) else {
-      return
-    }
-    
-    let textureRect = CGRect(origin: texturePoint, size: .zero)
-    let deviceRect = camera.videoDataOutput.metadataOutputRectConverted(fromOutputRect: textureRect)
-    camera.focus(with: .autoFocus,
-                 exposureMode: .autoExpose,
-                 at: deviceRect.origin,
-                 monitorSubjectAreaChange: true)
-  }
-  
   @IBAction func togglePreviewTap(_ gesture: UITapGestureRecognizer) {
     togglePreview = !togglePreview
   }

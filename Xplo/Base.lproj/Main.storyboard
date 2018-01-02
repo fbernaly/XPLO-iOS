@@ -26,9 +26,6 @@
                                 <constraints>
                                     <constraint firstAttribute="height" constant="500" id="km1-E1-Ekj"/>
                                 </constraints>
-                                <connections>
-                                    <outletCollection property="gestureRecognizers" destination="Jt3-xo-hwN" appends="YES" id="C14-3w-tEb"/>
-                                </connections>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="jyN-oq-JNk" customClass="PreviewMetalView" customModule="XPLO" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="434" width="100" height="150"/>
@@ -204,11 +201,6 @@
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Gfk-M7-R28" sceneMemberID="firstResponder"/>
-                <tapGestureRecognizer id="Jt3-xo-hwN">
-                    <connections>
-                        <action selector="focusAndExposeTap:" destination="7wT-eC-pyf" id="O4k-5j-gC3"/>
-                    </connections>
-                </tapGestureRecognizer>
                 <tapGestureRecognizer id="77x-Pr-34o">
                     <connections>
                         <action selector="togglePreviewTap:" destination="7wT-eC-pyf" id="es8-yG-WOv"/>
