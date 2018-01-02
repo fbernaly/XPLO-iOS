@@ -78,7 +78,6 @@ class PreviewMetalView: MTKView {
   private func setupTransform(width: Int, height: Int, mirroring: Bool, rotation: Rotation) {
     var scaleX: Float = 1.0
     var scaleY: Float = 1.0
-    var resizeAspect: Float = 1.0
     
     internalBounds = self.bounds
     textureWidth = width
@@ -98,7 +97,6 @@ class PreviewMetalView: MTKView {
       }
     }
     // Resize aspect
-    resizeAspect = min(scaleX, scaleY)
     if scaleX < scaleY {
       scaleY = scaleX / scaleY
       scaleX = 1.0
@@ -118,7 +116,7 @@ class PreviewMetalView: MTKView {
       -scaleX, scaleY, 0.0, 1.0,
       scaleX, scaleY, 0.0, 1.0
     ]
-    vertexCoordBuffer = device!.makeBuffer(bytes: vertexData, length: vertexData.count * MemoryLayout<Float>.size, options: [])
+    vertexCoordBuffer = device?.makeBuffer(bytes: vertexData, length: vertexData.count * MemoryLayout<Float>.size, options: [])
     
     // Texture coordinate takes the rotation into account
     var textData: [Float]
@@ -156,7 +154,6 @@ class PreviewMetalView: MTKView {
       ]
     }
     textCoordBuffer = device?.makeBuffer(bytes: textData, length: textData.count * MemoryLayout<Float>.size, options: [])
-    
   }
   
   required init(coder: NSCoder) {
@@ -172,7 +169,9 @@ class PreviewMetalView: MTKView {
   }
   
   func configureMetal() {
-    let defaultLibrary = device!.makeDefaultLibrary()!
+    guard let defaultLibrary = device?.makeDefaultLibrary() else {
+      fatalError("Unable to make library")
+    }
     let pipelineDescriptor = MTLRenderPipelineDescriptor()
     pipelineDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
     pipelineDescriptor.vertexFunction = defaultLibrary.makeFunction(name: "vertexPassThrough")
@@ -185,20 +184,23 @@ class PreviewMetalView: MTKView {
     samplerDescriptor.tAddressMode = .clampToEdge
     samplerDescriptor.minFilter = .linear
     samplerDescriptor.magFilter = .linear
-    sampler = device!.makeSamplerState(descriptor: samplerDescriptor)
+    sampler = device?.makeSamplerState(descriptor: samplerDescriptor)
     
     do {
-      renderPipelineState = try device!.makeRenderPipelineState(descriptor: pipelineDescriptor)
+      renderPipelineState = try device?.makeRenderPipelineState(descriptor: pipelineDescriptor)
     } catch {
       fatalError("Unable to create preview Metal view pipeline state. (\(error))")
     }
     
-    commandQueue = device!.makeCommandQueue()
+    commandQueue = device?.makeCommandQueue()
   }
   
   func createTextureCache() {
+    guard let device = device else {
+      fatalError("Unable to get device")
+    }
     var newTextureCache: CVMetalTextureCache?
-    if CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device!, nil, &newTextureCache) == kCVReturnSuccess {
+    if CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &newTextureCache) == kCVReturnSuccess {
       textureCache = newTextureCache
     } else {
       assertionFailure("Unable to allocate texture cache")
@@ -229,6 +231,7 @@ class PreviewMetalView: MTKView {
     if textureCache == nil {
       createTextureCache()
     }
+    
     var cvTextureOut: CVMetalTexture?
     CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
                                               textureCache!,
@@ -239,9 +242,9 @@ class PreviewMetalView: MTKView {
                                               height,
                                               0,
                                               &cvTextureOut)
-    guard let cvTexture = cvTextureOut, let texture = CVMetalTextureGetTexture(cvTexture) else {
+    guard let cvTexture = cvTextureOut,
+      let texture = CVMetalTextureGetTexture(cvTexture) else {
       print("Failed to create preview texture")
-      
       CVMetalTextureCacheFlush(textureCache!, 0)
       return
     }
@@ -274,7 +277,7 @@ class PreviewMetalView: MTKView {
     }
     
     commandEncoder.label = "Preview display"
-    commandEncoder.setRenderPipelineState(renderPipelineState!)
+    commandEncoder.setRenderPipelineState(renderPipelineState)
     commandEncoder.setVertexBuffer(vertexCoordBuffer, offset: 0, index: 0)
     commandEncoder.setVertexBuffer(textCoordBuffer, offset: 0, index: 1)
     commandEncoder.setFragmentTexture(texture, index: 0)
