@@ -325,5 +325,4 @@ intrinsicMatrixReferenceDimensions:intrinsicMatrixReferenceDimensions];
   });
 }
 
-
 @end

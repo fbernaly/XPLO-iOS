@@ -88,14 +88,6 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   }
 }
 
-- (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-  return UIInterfaceOrientationMaskPortrait;
-}
-
-- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
-  return UIInterfaceOrientationPortrait;
-}
-
 #pragma mark Selectors
 
 - (IBAction)backButtonTapped:(UIButton *)sender {

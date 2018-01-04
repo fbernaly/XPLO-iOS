@@ -95,23 +95,6 @@ class CameraViewController: UIViewController {
     super.viewWillDisappear(animated)
   }
   
-  override var shouldAutorotate: Bool {
-    // Disable autorotation of the interface when recording is in progress.
-    if let movieFileOutput = camera.movieFileOutput {
-      return !movieFileOutput.isRecording
-    }
-    return true
-  }
-  
-  override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-    return .all
-  }
-  
-  override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-    super.viewWillTransition(to: size, with: coordinator)
-    camera.rotate()
-  }
-  
   // MARK: Xplo Setup
   
   func setupXplo() {
