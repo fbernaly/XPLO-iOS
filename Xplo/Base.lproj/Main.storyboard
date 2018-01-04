@@ -39,7 +39,7 @@
                                     <outletCollection property="gestureRecognizers" destination="77x-Pr-34o" appends="YES" id="phz-1B-Da8"/>
                                 </connections>
                             </view>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Jgp-EQ-DhY" customClass="MTKView">
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Jgp-EQ-DhY" customClass="PreviewView">
                                 <rect key="frame" x="0.0" y="20" width="375" height="647"/>
                                 <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </view>
@@ -192,7 +192,7 @@
                         <outlet property="mainPreview" destination="VLU-h9-heN" id="WOs-Vl-CSA"/>
                         <outlet property="mainPreviewHeightConstraint" destination="km1-E1-Ekj" id="Kkb-Hl-e9C"/>
                         <outlet property="photoButton" destination="1ND-qE-qTI" id="wex-rM-F6y"/>
-                        <outlet property="preview" destination="Jgp-EQ-DhY" id="XEu-Dp-mOP"/>
+                        <outlet property="previewView" destination="Jgp-EQ-DhY" id="GNB-fN-wnf"/>
                         <outlet property="recordButton" destination="jXM-bx-0eU" id="5Bu-MK-zox"/>
                         <outlet property="resumeButton" destination="PnU-ce-FM5" id="e10-35-sNG"/>
                         <outlet property="secondaryPreview" destination="jyN-oq-JNk" id="hns-bY-lz0"/>
@@ -213,7 +213,7 @@
         <scene sceneID="d5o-3C-UhE">
             <objects>
                 <viewController id="ZXF-vM-rxA" customClass="PhotoAlbumViewController" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="amS-b6-zHG" customClass="MTKView">
+                    <view key="view" contentMode="scaleToFill" id="amS-b6-zHG" customClass="PreviewView">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -304,6 +304,7 @@
                     </view>
                     <connections>
                         <outlet property="manualButton" destination="0oS-Tb-iJo" id="2Sl-Oj-KNv"/>
+                        <outlet property="previewView" destination="amS-b6-zHG" id="f9x-9F-8DO"/>
                         <outlet property="wiggleButton" destination="i2X-zh-IXO" id="b7p-HZ-8ab"/>
                     </connections>
                 </viewController>

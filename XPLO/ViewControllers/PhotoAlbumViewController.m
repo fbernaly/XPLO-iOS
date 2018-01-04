@@ -17,18 +17,18 @@
 #import "PhotoAlbumViewController.h"
 #import "WMUtilities.h"
 #import "WMMatrixUtilities.h"
-#import "WMRenderer.h"
 #import "WMCamera.h"
+#import "PreviewView.h"
 
 @interface PhotoAlbumViewController()
 
-@property (nonatomic, strong) WMRenderer *renderer;
 @property (nonatomic, assign) BOOL requestPhotoLibrary;
 @property (nonatomic, assign) BOOL isPhotoSelected;
 @property (nonatomic, strong) NSTimer *updateTimer;
 @property (nonatomic, assign) BOOL manual;
 @property (nonatomic, assign) float effectRotation;
 @property (nonatomic, assign) matrix_float4x4 matrixDeviceOrientation;
+@property (weak, nonatomic) IBOutlet PreviewView *previewView;
 @property (weak, nonatomic) IBOutlet UIButton *wiggleButton;
 @property (weak, nonatomic) IBOutlet UIButton *manualButton;
 
@@ -55,8 +55,6 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus phstatus) {
     NSLog(@"PHAuthorizationStatus = %d", (int)phstatus);
   }];
-  
-  _renderer = [[WMRenderer alloc] initWithView:(MTKView *)self.view];
   
   // Update timer
   _updateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 / 60.0
@@ -90,46 +88,12 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   }
 }
 
-- (BOOL)shouldAutorotate {
-  return YES;
-}
-
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
-  return UIInterfaceOrientationMaskAll;
+  return UIInterfaceOrientationMaskPortrait;
 }
 
 - (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation {
   return UIInterfaceOrientationPortrait;
-}
-
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-  return YES;
-}
-
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
-  UIDeviceOrientation deviceOrientation = UIDevice.currentDevice.orientation;
-  if ((deviceOrientation == UIDeviceOrientationFaceDown) || (deviceOrientation == UIDeviceOrientationFaceUp)) {
-    return;
-  }
-  
-  float deviceOrientationRadAngle = 0.0f;
-  switch (deviceOrientation) {
-    case UIDeviceOrientationPortraitUpsideDown:
-      deviceOrientationRadAngle = M_PI;
-      break;
-      
-    case UIDeviceOrientationLandscapeLeft:
-      deviceOrientationRadAngle = M_PI_2;
-      break;
-      
-    case UIDeviceOrientationLandscapeRight:
-      deviceOrientationRadAngle = -M_PI_2;
-      break;
-      
-    default:;
-  }
-  
-  _matrixDeviceOrientation = matrix_from_rotation(deviceOrientationRadAngle, 0.0f, 0.0f, 1.0f);
 }
 
 #pragma mark Selectors
@@ -186,13 +150,13 @@ static const float kEffectMagnificationRangeMax = 30.0f;
       (gestureRecognizer.state == UIGestureRecognizerStateChanged)) {
     const float newScale = (gestureRecognizer.scale - lastScale) * 25.0f;
     
-    WMCamera *camera = [_renderer copyCamera];
+    WMCamera *camera = [_previewView.camera copy];
     const float zPosition = MIN(kEffectMagnificationRangeMax, MAX(kEffectMagnificationRangeMin, [camera zPosition] + newScale));
     const float mag = kEffectMagnificationMinFactor - zPosition * kEffectMagnificationRate;
     
     [camera setZPosition:zPosition];
-    [_renderer setCamera:camera];
-    _renderer.focalMagnificationFactor = mag;
+    [_previewView setCamera:camera];
+    _previewView.focalMagnificationFactor = mag;
     
     lastScale = gestureRecognizer.scale;
   }
@@ -201,15 +165,15 @@ static const float kEffectMagnificationRangeMax = 30.0f;
 - (void)didPan:(UIPanGestureRecognizer*)gestureRecognizer {
   CGPoint point = [gestureRecognizer translationInView: self.view];
   [gestureRecognizer setTranslation:CGPointZero inView: self.view];
-  WMCamera *camera = [_renderer copyCamera];
+  WMCamera *camera = [_previewView.camera copy];
   
   float pan = (float)point.x / 180.0f * M_PI;
   float tilt = (float)point.y / 180.0f * M_PI;
   
   [camera setPan: camera.pan + pan];
   [camera setTilt: camera.tilt + tilt];
-
-  [_renderer setCamera:camera];
+  
+  [_previewView setCamera:camera];
 }
 
 #pragma mark Animation
@@ -231,7 +195,7 @@ static const float kEffectMagnificationRangeMax = 30.0f;
 }
 
 -(void)doTimerUpdate {
-  WMCamera *camera = [_renderer copyCamera];
+  WMCamera *camera = [_previewView.camera copy];
   
   _effectRotation += kEffectRotationRate;
   _effectRotation = (float)((int)_effectRotation%360);
@@ -242,7 +206,7 @@ static const float kEffectMagnificationRangeMax = 30.0f;
   
   [camera setXPosition:rx];
   [camera setYPosition:ry];
-  [_renderer setCamera:camera];
+  [_previewView setCamera:camera];
 }
 
 #pragma mark Image Picker Delegate
@@ -286,12 +250,12 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info {
                                                                                            const matrix_float3x3 intrinsicMatrix = matrix_transpose(cameraCalibrationData.intrinsicMatrix); // Metal requires row-major order
                                                                                            const CGSize intrinsicMatrixReferenceDimensions = cameraCalibrationData.intrinsicMatrixReferenceDimensions;
                                                                                            
-                                                                                           [_renderer setTextureOrientation:imageOrientationRadAngle];
-                                                                                           [_renderer setDepthMapOrientation:-imageOrientationRadAngle];
-                                                                                           [_renderer setDepthMap:depthData.depthDataMap
-                                                                                                  intrinsicMatrix:intrinsicMatrix
-                                                                               intrinsicMatrixReferenceDimensions:intrinsicMatrixReferenceDimensions];
-                                                                                           [_renderer setTexture:image];
+                                                                                           [_previewView setTextureOrientation:imageOrientationRadAngle];
+                                                                                           [_previewView setDepthMapOrientation:-imageOrientationRadAngle];
+                                                                                           [_previewView setDepthMap:depthData.depthDataMap
+                                                                                                     intrinsicMatrix:intrinsicMatrix
+                                                                                  intrinsicMatrixReferenceDimensions:intrinsicMatrixReferenceDimensions];
+                                                                                           [_previewView setImageTexture:image];
                                                                                            
                                                                                            _isPhotoSelected = YES;
                                                                                          }];

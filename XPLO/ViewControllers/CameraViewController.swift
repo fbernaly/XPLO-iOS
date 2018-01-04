@@ -11,7 +11,7 @@ import AVFoundation
 
 class CameraViewController: UIViewController {
   
-  @IBOutlet weak var preview: MTKView!
+  @IBOutlet weak var previewView: PreviewView!
   @IBOutlet weak var mainPreview: PreviewMetalView!
   @IBOutlet weak var secondaryPreview: PreviewMetalView!
   @IBOutlet weak var cameraUnavailableLabel: UILabel!
@@ -28,15 +28,14 @@ class CameraViewController: UIViewController {
   
   let camera = Camera()
   var togglePreview = false
-  var renderer: WMRenderer?
+  private var textureCache: CVMetalTextureCache?
   
   // MARK: View Controller Life Cycle
   
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    self.preview.isHidden = true
-    // self.renderer = WMRenderer(view: self.preview)
+    self.previewView.isHidden = false
     
     // Disable UI. The UI is enabled if and only if the session starts running.
     albumButton.isEnabled = false
@@ -199,7 +198,7 @@ class CameraViewController: UIViewController {
         videoDepthConverter.reset()
         if !videoDepthConverter.isPrepared {
           /*
-           outputRetainedBufferCountHint is the number of pixel buffers we expect to hold on to from the renderer. This value informs the renderer
+           outputRetainedBufferCountHint is the number of pixel buffers we expect to hold on to from the previewView. This value informs the previewView
            how to size its buffer pool and how many pixel buffers to preallocate. Allow 2 frames of latency to cover the dispatch_async call.
            */
           var depthFormatDescription: CMFormatDescription?
@@ -232,56 +231,65 @@ class CameraViewController: UIViewController {
       
       if let depthData = depthData,
         let cameraCalibrationData = depthData.cameraCalibrationData,
-        let sampleBuffer = videoSampleBuffer,
-        let cgImage = self.cgImageFromSampleBuffer(sampleBuffer) {
-        let intrinsicMatrix = matrix_transpose(cameraCalibrationData.intrinsicMatrix)
+        let texture = self.texture(sampleBuffer: videoSampleBuffer) {
+        let intrinsicMatrix = cameraCalibrationData.intrinsicMatrix.transpose
         let intrinsicMatrixReferenceDimensions = cameraCalibrationData.intrinsicMatrixReferenceDimensions
-        let texture = UIImage(cgImage: cgImage)
-        
-        let imageOrientationRadAngle: Float = Float(M_PI)
-        
-        self.renderer?.setTextureOrientation(imageOrientationRadAngle)
-        self.renderer?.setDepthMapOrientation(-imageOrientationRadAngle)
-        self.renderer?.setDepthMap(depthData.depthDataMap,
-                                   intrinsicMatrix: intrinsicMatrix,
-                                   intrinsicMatrixReferenceDimensions: intrinsicMatrixReferenceDimensions)
-        self.renderer?.setTexture(texture)
+        let imageOrientationRadAngle: Float = Float(Double.pi)
+        self.previewView.setTextureOrientation(imageOrientationRadAngle)
+        self.previewView.setDepthMapOrientation(-imageOrientationRadAngle)
+        self.previewView.setDepthMap(depthData.depthDataMap,
+                                     intrinsicMatrix: intrinsicMatrix,
+                                     intrinsicMatrixReferenceDimensions: intrinsicMatrixReferenceDimensions)
+        self.previewView.setTexture(texture)
       }
     }
   }
   
-  func cgImageFromSampleBuffer(_ sampleBuffer : CMSampleBuffer) -> CGImage? {
-    // Get a CMSampleBuffer's Core Video image buffer for the media data
-    guard let  imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-      return nil
+  func createTextureCache() {
+    guard let device = previewView.device else {
+      fatalError("Unable to get device")
+    }
+    var newTextureCache: CVMetalTextureCache?
+    if CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &newTextureCache) == kCVReturnSuccess {
+      textureCache = newTextureCache
+    } else {
+      assertionFailure("Unable to allocate texture cache")
+    }
+  }
+  
+  func texture(sampleBuffer: CMSampleBuffer?) -> MTLTexture? {
+    if self.textureCache == nil {
+      self.createTextureCache()
     }
     
-    // Lock the base address of the pixel buffer
-    CVPixelBufferLockBaseAddress(imageBuffer, CVPixelBufferLockFlags.readOnly)
+    guard let sampleBuffer = sampleBuffer,
+      let textureCache = self.textureCache,
+      let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+        return nil
+    }
     
-    // Get the number of bytes per row for the pixel buffer
-    let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer)
-    
-    // Get the number of bytes per row for the pixel buffer
-    let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer)
-    // Get the pixel buffer width and height
+    let planeIndex: Int = 0
+    let pixelFormat: MTLPixelFormat = .bgra8Unorm
     let width = CVPixelBufferGetWidth(imageBuffer)
     let height = CVPixelBufferGetHeight(imageBuffer)
+    var imageTexture: CVMetalTexture?
+    let result = CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                           textureCache,
+                                                           imageBuffer,
+                                                           nil,
+                                                           pixelFormat,
+                                                           width,
+                                                           height,
+                                                           planeIndex,
+                                                           &imageTexture)
     
-    // Create a device-dependent RGB color space
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    guard let unwrappedImageTexture = imageTexture,
+      let texture = CVMetalTextureGetTexture(unwrappedImageTexture),
+      result == kCVReturnSuccess else {
+        return nil
+    }
     
-    // Create a bitmap graphics context with the sample buffer data
-    var bitmapInfo: UInt32 = CGBitmapInfo.byteOrder32Little.rawValue
-    bitmapInfo |= CGImageAlphaInfo.premultipliedFirst.rawValue & CGBitmapInfo.alphaInfoMask.rawValue
-    //let bitmapInfo: UInt32 = CGBitmapInfo.alphaInfoMask.rawValue
-    let context = CGContext.init(data: baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo)
-    // Create a Quartz image from the pixel data in the bitmap graphics context
-    let quartzImage = context?.makeImage()
-    // Unlock the pixel buffer
-    CVPixelBufferUnlockBaseAddress(imageBuffer, CVPixelBufferLockFlags.readOnly)
-    
-    return quartzImage
+    return texture
   }
   
   // MARK: Device Configuration

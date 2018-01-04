@@ -6,5 +6,7 @@
 #import "minMaxFromBuffer.h"
 #import "WMUtilities.h"
 #import "WMMatrixUtilities.h"
-#import "WMRenderer.h"
 #import "WMCamera.h"
+#import "WMMeshModel.h"
+#import "PreviewView.h"
+
