@@ -7,21 +7,21 @@
 //
 
 import UIKit
-import AVFoundation
+import MetalKit
 
 class CameraViewController: UIViewController {
   
-  @IBOutlet weak var previewView: PreviewView!
+  @IBOutlet weak var metalView: MTKView!
   @IBOutlet weak var cameraUnavailableLabel: UILabel!
   @IBOutlet weak var albumButton: UIButton!
   @IBOutlet weak var photoButton: UIButton!
   @IBOutlet weak var cameraButton: UIButton!
   @IBOutlet weak var resumeButton: UIButton!
   @IBOutlet weak var flashButton: UIButton!
-  @IBOutlet weak var filterButton: UIButton!
   
   let camera = Camera()
-  private var textureCache: CVMetalTextureCache?
+  var renderer:Renderer!
+  var lastScale: CGFloat = 0
   
   // MARK: View Controller Life Cycle
   
@@ -33,9 +33,18 @@ class CameraViewController: UIViewController {
     cameraButton.isEnabled = false
     photoButton.isEnabled = false
     flashButton.isEnabled = false
-    filterButton.isEnabled = false
     
     setupXplo()
+    
+    renderer = Renderer(withView: metalView)
+    
+    let panGestureRecognizer = UIPanGestureRecognizer(target: self,
+                                                      action: #selector(CameraViewController.panGestureRecognized(_:)))
+    view.addGestureRecognizer(panGestureRecognizer)
+    
+    let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self,
+                                                          action: #selector(CameraViewController.pinchGestureRecognizer(_:)))
+    view.addGestureRecognizer(pinchGestureRecognizer)
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -85,6 +94,21 @@ class CameraViewController: UIViewController {
     super.viewWillDisappear(animated)
   }
   
+  //MARK: UIGestureRecognizer
+  
+  @objc func panGestureRecognized(_ panGestureRecognizer: UIPanGestureRecognizer) {
+    let velocity = panGestureRecognizer.velocity(in: panGestureRecognizer.view)
+    renderer.setRotationVelocity(velocity)
+  }
+  
+  @objc func pinchGestureRecognizer(_ pinchGestureRecognizer: UIPinchGestureRecognizer) {
+    if pinchGestureRecognizer.state == .changed {
+      let scale = pinchGestureRecognizer.scale - lastScale
+      renderer.position.z += Float(scale) * 10
+    }
+    lastScale = pinchGestureRecognizer.scale
+  }
+  
   // MARK: Xplo Setup
   
   func setupXplo() {
@@ -92,7 +116,6 @@ class CameraViewController: UIViewController {
       let isSessionRunning = self.camera.isSessionRunning
       self.albumButton.isEnabled = isSessionRunning
       self.flashButton.isEnabled = isSessionRunning
-      self.filterButton.isEnabled = isSessionRunning
       // Only enable the ability to change camera if the device has more than one camera.
       self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
       self.photoButton.isEnabled = isSessionRunning
@@ -135,69 +158,10 @@ class CameraViewController: UIViewController {
       }
     }
     camera.onStream = { (videoSampleBuffer, depthData) in
-      if let depthData = depthData,
-        let cameraCalibrationData = depthData.cameraCalibrationData,
-        let texture = self.texture(sampleBuffer: videoSampleBuffer) {
-        let intrinsicMatrix = cameraCalibrationData.intrinsicMatrix.transpose
-        let intrinsicMatrixReferenceDimensions = cameraCalibrationData.intrinsicMatrixReferenceDimensions
-        let imageOrientationRadAngle: Float = Float(Double.pi)
-        self.previewView.setTextureOrientation(imageOrientationRadAngle)
-        self.previewView.setDepthMapOrientation(-imageOrientationRadAngle)
-        self.previewView.setDepthMap(depthData.depthDataMap,
-                                     intrinsicMatrix: intrinsicMatrix,
-                                     intrinsicMatrixReferenceDimensions: intrinsicMatrixReferenceDimensions)
-        self.previewView.setTexture(texture)
+      if let depthData = depthData {
+        self.renderer.update(depthData: depthData)
       }
     }
-  }
-  
-  // MARK: Texture
-  
-  func createTextureCache() {
-    guard let device = previewView.device else {
-      fatalError("Unable to get device")
-    }
-    var newTextureCache: CVMetalTextureCache?
-    if CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, device, nil, &newTextureCache) == kCVReturnSuccess {
-      textureCache = newTextureCache
-    } else {
-      assertionFailure("Unable to allocate texture cache")
-    }
-  }
-  
-  func texture(sampleBuffer: CMSampleBuffer?) -> MTLTexture? {
-    if self.textureCache == nil {
-      self.createTextureCache()
-    }
-    
-    guard let sampleBuffer = sampleBuffer,
-      let textureCache = self.textureCache,
-      let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-        return nil
-    }
-    
-    let planeIndex: Int = 0
-    let pixelFormat: MTLPixelFormat = .bgra8Unorm
-    let width = CVPixelBufferGetWidth(imageBuffer)
-    let height = CVPixelBufferGetHeight(imageBuffer)
-    var imageTexture: CVMetalTexture?
-    let result = CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
-                                                           textureCache,
-                                                           imageBuffer,
-                                                           nil,
-                                                           pixelFormat,
-                                                           width,
-                                                           height,
-                                                           planeIndex,
-                                                           &imageTexture)
-    
-    guard let unwrappedImageTexture = imageTexture,
-      let texture = CVMetalTextureGetTexture(unwrappedImageTexture),
-      result == kCVReturnSuccess else {
-        return nil
-    }
-    
-    return texture
   }
   
   // MARK: Device Configuration
@@ -208,7 +172,6 @@ class CameraViewController: UIViewController {
     }
     albumButton.isEnabled = false
     flashButton.isEnabled = false
-    filterButton.isEnabled = false
     cameraButton.isEnabled = false
     photoButton.isEnabled = false
     camera.toggleCaptureDevice() {
@@ -216,7 +179,6 @@ class CameraViewController: UIViewController {
       self.flashButton.isEnabled = true
       self.cameraButton.isEnabled = true
       self.photoButton.isEnabled = true
-      self.filterButton.isEnabled = true
     }
   }
   
@@ -242,17 +204,6 @@ class CameraViewController: UIViewController {
       camera.flashMode = .auto
       flashButton.setImage(UIImage(named: "flash_auto"), for: .normal)
     }
-  }
-  
-  // MARK: Filter
-  
-  @IBAction func filterButtonTapped(_ sender: UIButton) {
-    if camera.depthDataOutput.isFilteringEnabled {
-      sender.setImage(UIImage(named: "no_filter"), for: .normal)
-    } else {
-      sender.setImage(UIImage(named: "filter"), for: .normal)
-    }
-    camera.depthDataOutput.isFilteringEnabled = !camera.depthDataOutput.isFilteringEnabled
   }
   
   // MARK: Session
