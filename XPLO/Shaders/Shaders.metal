@@ -2,90 +2,54 @@
 //  Shaders.metal
 //  XPLO
 //
-//  Tweaked by Francisco Bernal Yescas on 12/5/17.
-//  Source: https://developer.apple.com/videos/play/wwdc2017/507/
-//  Copyright © 2017 Apple Inc. All rights reserved.
+//  Created by Francisco Bernal Yescas on 1/9/18.
+//  Copyright © 2018 Sean Fredrick, LLC. All rights reserved.
 //
 
 #include <metal_stdlib>
-#include <simd/simd.h>
-#include "../Model/WiggleMe/Common/WMTypes.h"
-
 using namespace metal;
 
-#pragma mark Samplers
+struct VertexOut {
+  float4 position[[position]];
+  float pointSize[[point_size]];
+};
 
-// Bi-linear interpolation, normalized units, clamp to edge
-constexpr sampler sL( filter::linear );
-
-#pragma mark Structures
-
-typedef struct
+struct RenderParams
 {
-  packed_float3 position;
-  packed_float2 texCoords;
-} texture_vertex_t;
+  float4x4 projectionMatrix;
+};
 
-typedef struct {
-  float4 position     [[position]];
-  float2 texCoords    [[user(tex_coords)]];
-} ColorInOut;
-
-#pragma mark Texture Shader Pipeline
-
-vertex ColorInOut texture_vertex_shader(device texture_vertex_t*          vertices            [[buffer(0)]],
-                                        constant WMSharedUniforms&        uniforms            [[buffer(1)]],
-                                        constant WMPerInstanceUniforms*   perInstanceUniforms [[buffer(2)]],
-                                        uint vid [[vertex_id]],
-                                        ushort iid [[instance_id]])
+struct XYZ
 {
-  ColorInOut out;
+  float x;
+  float y;
+  float z;
+};
+
+vertex VertexOut vert(const device float4* vertices [[buffer(0)]],
+                      const device RenderParams &params [[buffer(1)]],
+                      const device XYZ &offset [[buffer(2)]],
+                      unsigned int vid [[vertex_id]]) {
   
-  const float4x4 modelMatrix = perInstanceUniforms[iid].modelMatrix;
+  VertexOut out;
   
-  const float4 in_position = float4(vertices[vid].position, 1.0);
-  const float2 in_texCoords = float2(vertices[vid].texCoords);
+  float4 pos = vertices[vid];
+  pos.z = pos.z + offset.z;
   
-  const float4x4 modelViewMatrix = uniforms.viewMatrix * modelMatrix;
-  const float4 modelViewPosition = modelViewMatrix * in_position;
-  out.position = uniforms.projectionMatrix * modelViewPosition;
-  
-  out.texCoords = in_texCoords;
+  out.position = params.projectionMatrix * pos;
+  out.pointSize = 5;
   
   return out;
 }
 
-fragment half4 texture_fragment_shader(ColorInOut                       in      [[stage_in]],
-                                       texture2d<float, access::sample> texture [[texture(0)]])
-{
-  const float4 textureColor = texture.sample(sL, in.texCoords);
-  return half4(textureColor);
-}
-
-// Vertex input/output structure for passing results from vertex shader to fragment shader
-struct VertexIO
-{
-  float4 position [[position]];
-  float2 textureCoord [[user(texturecoord)]];
-};
-
-// Vertex shader for a textured quad
-vertex VertexIO vertexPassThrough(device packed_float4 *pPosition  [[ buffer(0) ]],
-                                  device packed_float2 *pTexCoords [[ buffer(1) ]],
-                                  uint                  vid        [[ vertex_id ]])
-{
-  VertexIO outVertex;
+fragment half4 frag(float2 pointCoord [[point_coord]], float4 pointPos [[position]]) {
+  float dist = distance(float2(0.5), pointCoord);
+  float intensity = (1.0 - (dist * 2.0));
   
-  outVertex.position = pPosition[vid];
-  outVertex.textureCoord = pTexCoords[vid];
+  if (dist > 0.5) {
+    discard_fragment();
+  }
   
-  return outVertex;
+  return half4((pointPos.x / 1000.0) * intensity, (pointPos.y / 1000.0) * intensity, (pointPos.z / 1.0) * intensity, intensity);
 }
 
-// Fragment shader for a textured quad
-fragment half4 fragmentPassThrough(VertexIO         inputFragment [[ stage_in ]],
-                                   texture2d<half> inputTexture  [[ texture(0) ]],
-                                   sampler         samplr        [[ sampler(0) ]])
-{
-  return inputTexture.sample(samplr, inputFragment.textureCoord);
-}
