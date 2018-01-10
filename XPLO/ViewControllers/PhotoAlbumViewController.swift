@@ -13,10 +13,14 @@ import Photos
 class PhotoAlbumViewController: UIViewController {
   
   @IBOutlet weak var metalView: MTKView!
+  @IBOutlet weak var photoAlbumButton: UIButton!
+  @IBOutlet weak var wiggleButton: UIButton!
   
-  var renderer:Renderer!
-  var lastScale: CGFloat = 0
-  var isPhotoSelected = false
+  private var renderer:Renderer!
+  private var lastScale: CGFloat = 0
+  private var isPhotoSelected = false
+  private var timer:Timer?
+  private var angle: Float = 0
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -42,6 +46,12 @@ class PhotoAlbumViewController: UIViewController {
     }
   }
   
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    wiggleButton.isSelected = true
+    wiggleButtonTapped(wiggleButton)
+  }
+  
   override var prefersStatusBarHidden: Bool {
     return true
   }
@@ -56,7 +66,7 @@ class PhotoAlbumViewController: UIViewController {
   @objc func pinchGestureRecognizer(_ pinchGestureRecognizer: UIPinchGestureRecognizer) {
     if pinchGestureRecognizer.state == .changed {
       let scale = pinchGestureRecognizer.scale - lastScale
-      renderer.position.z += Float(scale) * 10
+      renderer.position.z += Float(scale) * 100
     }
     lastScale = pinchGestureRecognizer.scale
   }
@@ -71,6 +81,38 @@ class PhotoAlbumViewController: UIViewController {
     self.selectPhoto()
   }
   
+  @IBAction func wiggleButtonTapped(_ sender: UIButton) {
+    sender.isSelected = !sender.isSelected
+    sender.backgroundColor = sender.isSelected ? UIColor.white.withAlphaComponent(0.5) : UIColor.clear
+    self.timer?.invalidate()
+    self.setDefaultOffset()
+    if sender.isSelected {
+      angle = 0
+      timer = Timer.scheduledTimer(timeInterval: 1.0 / 60,
+                                   target: self,
+                                   selector: #selector(PhotoAlbumViewController.wiggleTimer(_:)),
+                                   userInfo: nil,
+                                   repeats: true)
+    }
+  }
+  
+  //MARK: Timer
+  
+  @objc private func wiggleTimer(_ timer: Timer) {
+    let kEffectRotationRate: Float = 5.0
+    let kEffectRotationRadius: Float = 10
+    
+    angle += kEffectRotationRate;
+    angle = Float(Int(angle) % 360)
+    
+    let theta = angle / 180.0 * .pi;
+    let rx = cosf(-theta) * kEffectRotationRadius;
+    let ry = sinf(-theta) * kEffectRotationRadius;
+    
+    renderer.position.x = rx
+    renderer.position.y = ry
+  }
+  
   //MARK: UIImagePickerControllerDelegate
   
   func selectPhoto() {
@@ -80,9 +122,24 @@ class PhotoAlbumViewController: UIViewController {
     self.present(imagePicker, animated: true, completion: nil)
   }
   
+  //MARK: Update
+  
+  func setDefaultOffset() {
+    let mesh = self.renderer.mesh
+    let offset = -mesh.zMax + mesh.offset - 100
+    self.renderer.setVirtualCameraOffset(offset)
+  }
+  
 }
 
 extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+  
+  func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+    picker.dismiss(animated: true, completion: nil)
+    if !isPhotoSelected {
+      self.dismiss(animated: true, completion: nil)
+    }
+  }
   
   func imagePickerController(_ picker: UIImagePickerController,
                              didFinishPickingMediaWithInfo info: [String : Any]) {
@@ -102,33 +159,15 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
                                               options: imageRequestOptions) { (data, _, _, _) in
                                                 guard let data = data,
                                                   let source = CGImageSourceCreateWithData(data as CFData, nil),
-                                                  let depthData = self.depthData(source: source) else {
+                                                  let depthData = AVDepthData(fromSource: source) else {
                                                     return
                                                 }
                                                 self.isPhotoSelected = true
                                                 self.renderer.update(depthData: depthData, image: image)
+                                                self.setDefaultOffset()
+                                                self.wiggleButton.isSelected = false
+                                                self.wiggleButtonTapped(self.wiggleButton)
     }
-  }
-  
-  func depthData(source: CGImageSource) -> AVDepthData? {
-    guard let auxDataInfo = CGImageSourceCopyAuxiliaryDataInfoAtIndex(source, 0,
-                                                                      kCGImageAuxiliaryDataTypeDisparity) as? [AnyHashable : Any] else {
-                                                                        return nil
-    }
-    
-    var depthData: AVDepthData
-    
-    do {
-      depthData = try AVDepthData(fromDictionaryRepresentation: auxDataInfo)
-    } catch {
-      return nil
-    }
-    
-    if depthData.depthDataType != kCVPixelFormatType_DisparityFloat32 {
-      depthData = depthData.converting(toDepthDataType: kCVPixelFormatType_DisparityFloat32)
-    }
-    
-    return depthData
   }
   
 }
