@@ -24,6 +24,7 @@
 		0EEDB4011FD724AC00EDE147 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FC1FD724AC00EDE147 /* CameraViewController.swift */; };
 		0EEDB4021FD724AC00EDE147 /* PhotoCaptureProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */; };
 		0EEDB4031FD724AC00EDE147 /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FF1FD724AC00EDE147 /* Camera.swift */; };
+		0EF17C9620057CD700DBC309 /* AVDepthData+CGImageSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 		0EEDB3FC1FD724AC00EDE147 /* CameraViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
 		0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoCaptureProcessor.swift; sourceTree = "<group>"; };
 		0EEDB3FF1FD724AC00EDE147 /* Camera.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
+		0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVDepthData+CGImageSource.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,10 +65,9 @@
 		0E0871A31FD7C14E00ECE059 /* Capture */ = {
 			isa = PBXGroup;
 			children = (
-				0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */,
-				0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */,
-				0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */,
 				0EEDB3FF1FD724AC00EDE147 /* Camera.swift */,
+				0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */,
+				0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -144,10 +145,20 @@
 		0EEDB3FD1FD724AC00EDE147 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				0EF17C9220056C3B00DBC309 /* Extensions */,
 				0E0871A31FD7C14E00ECE059 /* Capture */,
 				0E8B6DF92004B077006CD08E /* Renderer */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		0EF17C9220056C3B00DBC309 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */,
+				0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */,
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -232,6 +243,7 @@
 				0E0871851FD786F900ECE059 /* VideoRecordingProcessor.swift in Sources */,
 				0E08719E1FD7C04B00ECE059 /* Shaders.metal in Sources */,
 				0E8B6E012004B08D006CD08E /* XYZ.swift in Sources */,
+				0EF17C9620057CD700DBC309 /* AVDepthData+CGImageSource.swift in Sources */,
 				0E1304AC1FD8E2C0007BF97E /* PreviewMetalView.swift in Sources */,
 				0E8B6E022004B08D006CD08E /* Matrix.swift in Sources */,
 				0EEDB4011FD724AC00EDE147 /* CameraViewController.swift in Sources */,
