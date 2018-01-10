@@ -91,6 +91,7 @@ class CameraViewController: UIViewController {
   
   override func viewWillDisappear(_ animated: Bool) {
     camera.stop()
+    renderer.setVirtualCameraOffset()
     super.viewWillDisappear(animated)
   }
   
@@ -104,7 +105,7 @@ class CameraViewController: UIViewController {
   @objc func pinchGestureRecognizer(_ pinchGestureRecognizer: UIPinchGestureRecognizer) {
     if pinchGestureRecognizer.state == .changed {
       let scale = pinchGestureRecognizer.scale - lastScale
-      renderer.position.z += Float(scale) * 10
+      renderer.position.z += Float(scale) * 100
     }
     lastScale = pinchGestureRecognizer.scale
   }
@@ -179,6 +180,7 @@ class CameraViewController: UIViewController {
       self.flashButton.isEnabled = true
       self.cameraButton.isEnabled = true
       self.photoButton.isEnabled = true
+      self.renderer.setVirtualCameraOffset()
     }
   }
   
