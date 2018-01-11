@@ -16,17 +16,22 @@ class Renderer: NSObject {
   private var numberOfObjects:Int = 0
   private var commandQueue: MTLCommandQueue?
   private var renderPipelineState: MTLRenderPipelineState?
-  private var positionsIn: MTLBuffer?
+  private var depthStencilState: MTLDepthStencilState?
+  private var pointsBuffer: MTLBuffer?
+  private var indecesBuffer: MTLBuffer?
   private var renderParams: MTLBuffer?
+  private var textureRotationParams: MTLBuffer?
   private var offsetParams: MTLBuffer?
   private var view: MTKView?
+  private var texture: MTLTexture?
   private var camera = VirtualCamera()
   
   private var lastFrameTime: TimeInterval = 0.0
   private var angularVelocity: CGPoint = .zero
   var position: XYZ
   var rotation: XYZ
-  private let mesh: Mesh
+  var live = false
+  let mesh: Mesh
   
   private static let kVelocityScale: CGFloat = 0.005
   private static let kRotationDamping: CGFloat = 0.98
@@ -40,33 +45,47 @@ class Renderer: NSObject {
     self.view = view
     self.view?.delegate = self
     self.view?.device = MTLCreateSystemDefaultDevice()
+    self.view?.preferredFramesPerSecond = 30
+    self.view?.sampleCount = 4
+    self.view?.depthStencilPixelFormat = .depth32Float_stencil8
     
     initMetal()
+    
+    setVirtualCameraOffset()
   }
   
   func initMetal() {
     guard let device = self.view?.device,
-      let library = device.makeDefaultLibrary() else {
+      let library = device.makeDefaultLibrary(),
+      let view = self.view else {
         return
     }
     
     commandQueue = device.makeCommandQueue()
     
     let renderPipelineStateDescriptor = MTLRenderPipelineDescriptor()
+    renderPipelineStateDescriptor.sampleCount = view.sampleCount
     renderPipelineStateDescriptor.vertexFunction = library.makeFunction(name: "vert")
     renderPipelineStateDescriptor.fragmentFunction = library.makeFunction(name: "frag")
     renderPipelineStateDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
-    renderPipelineStateDescriptor.colorAttachments[0].isBlendingEnabled = true
-    renderPipelineStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = .one
-    renderPipelineStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .one
-    renderPipelineStateDescriptor.colorAttachments[0].rgbBlendOperation = .add
-    renderPipelineStateDescriptor.colorAttachments[0].alphaBlendOperation = .add
+    renderPipelineStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
+    renderPipelineStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
     
     do {
       renderPipelineState = try device.makeRenderPipelineState(descriptor: renderPipelineStateDescriptor)
     } catch {
       print("Failed to create render pipeline state")
     }
+    
+    let depthStencilDescriptor = MTLDepthStencilDescriptor()
+    depthStencilDescriptor.depthCompareFunction = .less
+    depthStencilDescriptor.isDepthWriteEnabled = true
+    depthStencilState = device.makeDepthStencilState(descriptor: depthStencilDescriptor)
+    
+    let datasize = MemoryLayout<UInt32>.size * mesh.indices.count
+    indecesBuffer = device.makeBuffer(bytes: mesh.indices,
+                                      length: datasize,
+                                      options:.cpuCacheModeWriteCombined)
   }
   
   //MARK: - Update
@@ -99,36 +118,102 @@ class Renderer: NSObject {
     
     guard let device = view?.device else { return }
     
-    renderParams = device.makeBuffer(bytes: camera.matrix, length: MemoryLayout<matrix_float4x4>.size, options: .cpuCacheModeWriteCombined)
+    renderParams = device.makeBuffer(bytes: camera.matrix,
+                                     length: MemoryLayout<matrix_float4x4>.size,
+                                     options: .cpuCacheModeWriteCombined)
   }
   
   func setRotationVelocity(_ velocity: CGPoint) {
-    angularVelocity = CGPoint(x: velocity.x * Renderer.kVelocityScale, y: velocity.y * Renderer.kVelocityScale)
+    angularVelocity = CGPoint(x: velocity.x * Renderer.kVelocityScale,
+                              y: velocity.y * Renderer.kVelocityScale)
   }
   
-  func update(depthData: AVDepthData, image: UIImage? = nil) {
-    mesh.compute(depthData: depthData)
-    var points = mesh.points
-    let i = 1000
-    for j in -i...i {
-      let point: [Float] = [0, Float(j), mesh.offset, 1]
-      points.append(contentsOf: point)
+  func update(depthData: AVDepthData,
+              image: UIImage,
+              orientation: CGImagePropertyOrientation,
+              mirroring: Bool = false) {
+    guard let device = view?.device,
+      let cgImage = image.cgImage else {
+        return
     }
     
-    let z = mesh.zMax - mesh.offset
-    position.z = -z - 30
+    // create texture
+    let loader = MTKTextureLoader(device: device)
+    guard let texture = try? loader.newTexture(cgImage: cgImage, options: nil) else {
+      return
+    }
+    self.texture = texture
+    
+    // texture rotation
+    var radians: Float = 0
+    if !self.live {
+      switch orientation {
+      case .down:
+        radians = .pi
+      case .right:
+        radians = .pi / 2
+      case .left:
+        radians = -.pi / 2
+      default:
+        radians = 0
+      }
+    }
+    let v = vector3(0, 0, Float(1.0))
+    let cos = cosf(radians)
+    let cosp = 1.0 - cos
+    let sin = sinf(radians)
+    let textureRotationMatrix: [Float] = [cos + cosp * v.x * v.x,
+                                          cosp * v.x * v.y + v.z * sin,
+                                          cosp * v.x * v.z - v.y * sin,
+                                          0.0,
+                                          
+                                          cosp * v.x * v.y - v.z * sin,
+                                          cos + cosp * v.y * v.y,
+                                          cosp * v.y * v.z + v.x * sin,
+                                          0.0,
+                                          
+                                          cosp * v.x * v.z + v.y * sin,
+                                          cosp * v.y * v.z - v.x * sin,
+                                          cos + cosp * v.z * v.z,
+                                          0.0,
+                                          
+                                          0.0,
+                                          0.0,
+                                          0.0,
+                                          1.0]
+    textureRotationParams = device.makeBuffer(bytes: textureRotationMatrix,
+                                              length: MemoryLayout<matrix_float4x4>.size,
+                                              options: .cpuCacheModeWriteCombined)
+    
+    // create mesh
+    mesh.computeDepthData(depthData,
+                          orientation: orientation,
+                          mirroring:  mirroring)
+    let points = mesh.points
+    
+    // update render params
+    numberOfObjects = points.count / 5
+    let datasize = MemoryLayout<Float>.size * points.count
+    pointsBuffer = device.makeBuffer(bytes: points,
+                                     length: datasize,
+                                     options: [])
+    
+    var offset = XYZ(x: 0, y: 0, z: -mesh.offset)
+    offsetParams = device.makeBuffer(bytes: &offset,
+                                     length: MemoryLayout<XYZ>.size,
+                                     options: .cpuCacheModeWriteCombined)
+  }
+  
+  func setVirtualCameraOffset(_ offset: Float = -200) {
+    position.x = 0
+    position.y = 0
+    position.z = offset
+    
     rotation.x = 0
     rotation.y = Float.pi
     rotation.z = Float.pi
+    
     angularVelocity = .zero
-    
-    guard let device = view?.device else { return }
-    numberOfObjects = points.count / 4
-    let datasize = MemoryLayout<float4>.size * numberOfObjects
-    positionsIn = device.makeBuffer(bytes: points, length: datasize, options: [])
-    
-    var offset = XYZ(x: 0, y: 0, z: -mesh.offset)
-    offsetParams = device.makeBuffer(bytes: &offset, length: MemoryLayout<XYZ>.size, options: .cpuCacheModeWriteCombined)
   }
   
 }
@@ -138,29 +223,40 @@ extension Renderer: MTKViewDelegate {
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { }
   
   func draw(in view: MTKView) {
-    updateCamera()
-    
-    guard let commandBuffer = commandQueue?.makeCommandBuffer(),
+    guard let commandQueue = self.commandQueue,
       let renderPipelineState = self.renderPipelineState,
+      let depthStencilState = self.depthStencilState,
       let renderPassDescriptor = view.currentRenderPassDescriptor,
-      let drawable = view.currentDrawable
-      else {
+      let drawable = view.currentDrawable,
+      let commandBuffer = commandQueue.makeCommandBuffer(),
+      let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
         return
     }
     
-    // Vertex and fragment shaders
-    renderPassDescriptor.colorAttachments[0].loadAction = .clear
-    renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.15, 0.15, 0.3, 1.0)
+    updateCamera()
     
-    if numberOfObjects > 0,
-      let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) {
-      renderEncoder.setRenderPipelineState(renderPipelineState)
-      renderEncoder.setVertexBuffer(positionsIn, offset: 0, index: 0)
+    renderEncoder.setDepthStencilState(depthStencilState)
+    renderEncoder.setFrontFacing(.counterClockwise)
+    renderEncoder.setCullMode(self.live ? .front : .back)
+    renderEncoder.setRenderPipelineState(renderPipelineState)
+    if let pointsBuffer = self.pointsBuffer,
+      let renderParams = self.renderParams,
+      let textureRotationParams = self.textureRotationParams,
+      let offsetParams = self.offsetParams,
+      let indecesBuffer = self.indecesBuffer,
+      let texture = self.texture {
+      renderEncoder.setVertexBuffer(pointsBuffer, offset: 0, index: 0)
       renderEncoder.setVertexBuffer(renderParams, offset: 0, index: 1)
-      renderEncoder.setVertexBuffer(offsetParams, offset: 0, index: 2)
-      renderEncoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: numberOfObjects)
-      renderEncoder.endEncoding()
+      renderEncoder.setVertexBuffer(textureRotationParams, offset: 0, index: 2)
+      renderEncoder.setVertexBuffer(offsetParams, offset: 0, index: 3)
+      renderEncoder.setFragmentTexture(texture, index: 0)
+      renderEncoder.drawIndexedPrimitives(type: .triangleStrip,
+                                          indexCount: mesh.indices.count,
+                                          indexType: .uint32,
+                                          indexBuffer: indecesBuffer,
+                                          indexBufferOffset: 0)
     }
+    renderEncoder.endEncoding()
     
     commandBuffer.present(drawable)
     commandBuffer.commit()

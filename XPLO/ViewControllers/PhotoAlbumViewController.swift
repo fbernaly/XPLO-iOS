@@ -159,14 +159,15 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
                                               options: imageRequestOptions) { (data, _, _, _) in
                                                 guard let data = data,
                                                   let source = CGImageSourceCreateWithData(data as CFData, nil),
+                                                  let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String : Any],
+                                                  let rawValue = properties[kCGImagePropertyOrientation as String] as? UInt32,
+                                                  let orientation = CGImagePropertyOrientation(rawValue: rawValue),
                                                   let depthData = AVDepthData(fromSource: source) else {
                                                     return
                                                 }
                                                 self.isPhotoSelected = true
-                                                self.renderer.update(depthData: depthData, image: image)
+                                                self.renderer.update(depthData: depthData, image: image, orientation: orientation)
                                                 self.setDefaultOffset()
-                                                self.wiggleButton.isSelected = false
-                                                self.wiggleButtonTapped(self.wiggleButton)
     }
   }
   
