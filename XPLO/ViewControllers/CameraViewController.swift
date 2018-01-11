@@ -37,7 +37,6 @@ class CameraViewController: UIViewController {
     setupXplo()
     
     renderer = Renderer(withView: metalView)
-    renderer.live = true
     
     let panGestureRecognizer = UIPanGestureRecognizer(target: self,
                                                       action: #selector(CameraViewController.panGestureRecognized(_:)))

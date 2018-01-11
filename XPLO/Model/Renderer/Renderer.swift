@@ -25,12 +25,12 @@ class Renderer: NSObject {
   private var view: MTKView?
   private var texture: MTLTexture?
   private var camera = VirtualCamera()
+  private var mirroring = false;
   
   private var lastFrameTime: TimeInterval = 0.0
   private var angularVelocity: CGPoint = .zero
   var position: XYZ
   var rotation: XYZ
-  var live = false
   let mesh: Mesh
   
   private static let kVelocityScale: CGFloat = 0.005
@@ -137,6 +137,7 @@ class Renderer: NSObject {
       let cgImage = image.cgImage else {
         return
     }
+    self.mirroring = mirroring
     
     // create texture
     let loader = MTKTextureLoader(device: device)
@@ -225,7 +226,7 @@ extension Renderer: MTKViewDelegate {
     
     renderEncoder.setDepthStencilState(depthStencilState)
     renderEncoder.setFrontFacing(.counterClockwise)
-    renderEncoder.setCullMode(self.live ? .front : .back)
+    renderEncoder.setCullMode(self.mirroring ? .front : .back)
     renderEncoder.setRenderPipelineState(renderPipelineState)
     if let pointsBuffer = self.pointsBuffer,
       let renderParams = self.renderParams,

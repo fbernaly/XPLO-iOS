@@ -190,7 +190,6 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
                                                 }
                                                 
                                                 self.isPhotoSelected = true
-                                                self.renderer.live = false
                                                 self.renderer.update(depthData: depthData,
                                                                      image: image,
                                                                      orientation: orientation,
