@@ -383,7 +383,7 @@
 				INFOPLIST_FILE = XPLO/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sean.fredrick.XPLO;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sean-fredrick.xplo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "XPLO/XPLO-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -402,7 +402,7 @@
 				INFOPLIST_FILE = XPLO/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sean.fredrick.XPLO;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sean-fredrick.xplo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "XPLO/XPLO-Bridging-Header.h";
 				SWIFT_VERSION = 4.0;
