@@ -37,6 +37,7 @@ class CameraViewController: UIViewController {
     setupXplo()
     
     renderer = Renderer(withView: metalView)
+    renderer.live = true
     
     let panGestureRecognizer = UIPanGestureRecognizer(target: self,
                                                       action: #selector(CameraViewController.panGestureRecognized(_:)))
@@ -158,9 +159,16 @@ class CameraViewController: UIViewController {
         })
       }
     }
-    camera.onStream = { (videoSampleBuffer, depthData) in
-      if let depthData = depthData {
-        self.renderer.update(depthData: depthData)
+    camera.onStream = { (sampleBuffer, depthData) in
+      if let sampleBuffer = sampleBuffer,
+        let depthData = depthData,
+        let image = UIImage(sampleBuffer: sampleBuffer) {
+        let orientation: CGImagePropertyOrientation = .right
+        let mirroring = self.camera.videoDeviceInput.device.position == .front
+        self.renderer.update(depthData: depthData,
+                             image: image,
+                             orientation: orientation,
+                             mirroring: mirroring)
       }
     }
   }
