@@ -7,46 +7,45 @@
 //
 
 import UIKit
-import AVFoundation
+import MetalKit
 
 class CameraViewController: UIViewController {
   
-  @IBOutlet weak var preview: MTKView!
-  @IBOutlet weak var mainPreview: PreviewMetalView!
-  @IBOutlet weak var secondaryPreview: PreviewMetalView!
+  @IBOutlet weak var metalView: MTKView!
   @IBOutlet weak var cameraUnavailableLabel: UILabel!
   @IBOutlet weak var albumButton: UIButton!
   @IBOutlet weak var photoButton: UIButton!
   @IBOutlet weak var cameraButton: UIButton!
-  @IBOutlet weak var recordButton: UIButton!
   @IBOutlet weak var resumeButton: UIButton!
   @IBOutlet weak var flashButton: UIButton!
-  @IBOutlet weak var filterButton: UIButton!
-  @IBOutlet weak var mainPreviewHeightConstraint: NSLayoutConstraint!
-  @IBOutlet weak var secondaryPreviewHeightConstraint: NSLayoutConstraint!
-  @IBOutlet weak var secondaryPreviewWidthConstraint: NSLayoutConstraint!
   
   let camera = Camera()
-  var togglePreview = false
-  var renderer: WMRenderer?
+  var renderer:Renderer!
+  var lastScale: CGFloat = 0
   
   // MARK: View Controller Life Cycle
   
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    self.preview.isHidden = true
-    // self.renderer = WMRenderer(view: self.preview)
-    
     // Disable UI. The UI is enabled if and only if the session starts running.
     albumButton.isEnabled = false
     cameraButton.isEnabled = false
-    recordButton.isEnabled = false
     photoButton.isEnabled = false
     flashButton.isEnabled = false
-    filterButton.isEnabled = false
     
     setupXplo()
+    
+    renderer = Renderer(withView: metalView)
+    renderer.live = true
+    
+    let panGestureRecognizer = UIPanGestureRecognizer(target: self,
+                                                      action: #selector(CameraViewController.panGestureRecognized(_:)))
+    view.addGestureRecognizer(panGestureRecognizer)
+    
+    let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self,
+                                                          action: #selector(CameraViewController.pinchGestureRecognizer(_:)))
+    view.addGestureRecognizer(pinchGestureRecognizer)
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -93,24 +92,23 @@ class CameraViewController: UIViewController {
   
   override func viewWillDisappear(_ animated: Bool) {
     camera.stop()
+    renderer.setVirtualCameraOffset()
     super.viewWillDisappear(animated)
   }
   
-  override var shouldAutorotate: Bool {
-    // Disable autorotation of the interface when recording is in progress.
-    if let movieFileOutput = camera.movieFileOutput {
-      return !movieFileOutput.isRecording
+  //MARK: UIGestureRecognizer
+  
+  @objc func panGestureRecognized(_ panGestureRecognizer: UIPanGestureRecognizer) {
+    let velocity = panGestureRecognizer.velocity(in: panGestureRecognizer.view)
+    renderer.setRotationVelocity(velocity)
+  }
+  
+  @objc func pinchGestureRecognizer(_ pinchGestureRecognizer: UIPinchGestureRecognizer) {
+    if pinchGestureRecognizer.state == .changed {
+      let scale = pinchGestureRecognizer.scale - lastScale
+      renderer.position.z += Float(scale) * 100
     }
-    return true
-  }
-  
-  override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-    return .all
-  }
-  
-  override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-    super.viewWillTransition(to: size, with: coordinator)
-    camera.rotate()
+    lastScale = pinchGestureRecognizer.scale
   }
   
   // MARK: Xplo Setup
@@ -120,10 +118,8 @@ class CameraViewController: UIViewController {
       let isSessionRunning = self.camera.isSessionRunning
       self.albumButton.isEnabled = isSessionRunning
       self.flashButton.isEnabled = isSessionRunning
-      self.filterButton.isEnabled = isSessionRunning
       // Only enable the ability to change camera if the device has more than one camera.
       self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
-      self.recordButton.isEnabled = isSessionRunning && self.camera.movieFileOutput != nil
       self.photoButton.isEnabled = isSessionRunning
     }
     camera.onSessionInterrupted = { (reason) in
@@ -163,125 +159,18 @@ class CameraViewController: UIViewController {
         })
       }
     }
-    camera.onRotation = {
-      let interfaceOrientation = UIApplication.shared.statusBarOrientation
-      let videoPosition = self.camera.videoDeviceInput.device.position
-      let videoOrientation = self.camera.videoDataOutput.connection(with: .video)!.videoOrientation
-      let rotation = PreviewMetalView.Rotation(with: interfaceOrientation, videoOrientation: videoOrientation, cameraPosition: videoPosition)
-      self.mainPreview.mirroring = videoPosition == .front
-      self.secondaryPreview.mirroring = videoPosition == .front
-      if let rotation = rotation {
-        self.mainPreview.rotation = rotation
-        self.secondaryPreview.rotation = rotation
+    camera.onStream = { (sampleBuffer, depthData) in
+      if let sampleBuffer = sampleBuffer,
+        let depthData = depthData,
+        let image = UIImage(sampleBuffer: sampleBuffer) {
+        let orientation: CGImagePropertyOrientation = .right
+        let mirroring = self.camera.videoDeviceInput.device.position == .front
+        self.renderer.update(depthData: depthData,
+                             image: image,
+                             orientation: orientation,
+                             mirroring: mirroring)
       }
     }
-    camera.onStream = { (videoSampleBuffer, depthData) in
-      let interfaceOrientation = UIApplication.shared.statusBarOrientation
-      
-      if let sampleBuffer = videoSampleBuffer,
-        let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
-        if self.togglePreview {
-          self.secondaryPreview.pixelBuffer = buffer
-        } else {
-          self.mainPreview.pixelBuffer = buffer
-        }
-        
-        // update constraints
-        if interfaceOrientation.isPortrait {
-          self.mainPreviewHeightConstraint.constant = self.mainPreview.bounds.size.width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
-        } else {
-          self.mainPreviewHeightConstraint.constant = self.view.bounds.size.height
-        }
-      }
-      
-      if let depthData = depthData {
-        let videoDepthConverter = DepthToGrayscaleConverter()
-        videoDepthConverter.reset()
-        if !videoDepthConverter.isPrepared {
-          /*
-           outputRetainedBufferCountHint is the number of pixel buffers we expect to hold on to from the renderer. This value informs the renderer
-           how to size its buffer pool and how many pixel buffers to preallocate. Allow 2 frames of latency to cover the dispatch_async call.
-           */
-          var depthFormatDescription: CMFormatDescription?
-          CMVideoFormatDescriptionCreateForImageBuffer(kCFAllocatorDefault, depthData.depthDataMap, &depthFormatDescription)
-          videoDepthConverter.prepare(with: depthFormatDescription!, outputRetainedBufferCountHint: 2)
-        }
-        
-        guard let buffer = videoDepthConverter.render(pixelBuffer: depthData.depthDataMap) else {
-          print("Unable to process depth")
-          return
-        }
-        
-        if self.togglePreview {
-          self.mainPreview.pixelBuffer = buffer
-        } else {
-          self.secondaryPreview.pixelBuffer = buffer
-        }
-        
-        // update constraints
-        if interfaceOrientation.isPortrait {
-          let width: CGFloat = 100
-          self.secondaryPreviewWidthConstraint.constant = width
-          self.secondaryPreviewHeightConstraint.constant = width * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
-        } else {
-          let heigth: CGFloat = 130
-          self.secondaryPreviewHeightConstraint.constant = heigth
-          self.secondaryPreviewWidthConstraint.constant = heigth * CGFloat(CVPixelBufferGetWidth(buffer)) / CGFloat(CVPixelBufferGetHeight(buffer))
-        }
-      }
-      
-      if let depthData = depthData,
-        let cameraCalibrationData = depthData.cameraCalibrationData,
-        let sampleBuffer = videoSampleBuffer,
-        let cgImage = self.cgImageFromSampleBuffer(sampleBuffer) {
-        let intrinsicMatrix = matrix_transpose(cameraCalibrationData.intrinsicMatrix)
-        let intrinsicMatrixReferenceDimensions = cameraCalibrationData.intrinsicMatrixReferenceDimensions
-        let texture = UIImage(cgImage: cgImage)
-        
-        let imageOrientationRadAngle: Float = Float(M_PI)
-        
-        self.renderer?.setTextureOrientation(imageOrientationRadAngle)
-        self.renderer?.setDepthMapOrientation(-imageOrientationRadAngle)
-        self.renderer?.setDepthMap(depthData.depthDataMap,
-                                   intrinsicMatrix: intrinsicMatrix,
-                                   intrinsicMatrixReferenceDimensions: intrinsicMatrixReferenceDimensions)
-        self.renderer?.setTexture(texture)
-      }
-    }
-  }
-  
-  func cgImageFromSampleBuffer(_ sampleBuffer : CMSampleBuffer) -> CGImage? {
-    // Get a CMSampleBuffer's Core Video image buffer for the media data
-    guard let  imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
-      return nil
-    }
-    
-    // Lock the base address of the pixel buffer
-    CVPixelBufferLockBaseAddress(imageBuffer, CVPixelBufferLockFlags.readOnly)
-    
-    // Get the number of bytes per row for the pixel buffer
-    let baseAddress = CVPixelBufferGetBaseAddress(imageBuffer)
-    
-    // Get the number of bytes per row for the pixel buffer
-    let bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer)
-    // Get the pixel buffer width and height
-    let width = CVPixelBufferGetWidth(imageBuffer)
-    let height = CVPixelBufferGetHeight(imageBuffer)
-    
-    // Create a device-dependent RGB color space
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    
-    // Create a bitmap graphics context with the sample buffer data
-    var bitmapInfo: UInt32 = CGBitmapInfo.byteOrder32Little.rawValue
-    bitmapInfo |= CGImageAlphaInfo.premultipliedFirst.rawValue & CGBitmapInfo.alphaInfoMask.rawValue
-    //let bitmapInfo: UInt32 = CGBitmapInfo.alphaInfoMask.rawValue
-    let context = CGContext.init(data: baseAddress, width: width, height: height, bitsPerComponent: 8, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: bitmapInfo)
-    // Create a Quartz image from the pixel data in the bitmap graphics context
-    let quartzImage = context?.makeImage()
-    // Unlock the pixel buffer
-    CVPixelBufferUnlockBaseAddress(imageBuffer, CVPixelBufferLockFlags.readOnly)
-    
-    return quartzImage
   }
   
   // MARK: Device Configuration
@@ -292,59 +181,21 @@ class CameraViewController: UIViewController {
     }
     albumButton.isEnabled = false
     flashButton.isEnabled = false
-    filterButton.isEnabled = false
     cameraButton.isEnabled = false
-    recordButton.isEnabled = false
     photoButton.isEnabled = false
-    mainPreview.pixelBuffer = nil
-    secondaryPreview.pixelBuffer = nil
     camera.toggleCaptureDevice() {
       self.albumButton.isEnabled = true
       self.flashButton.isEnabled = true
       self.cameraButton.isEnabled = true
-      self.recordButton.isEnabled = self.camera.movieFileOutput != nil
       self.photoButton.isEnabled = true
-      self.filterButton.isEnabled = true
+      self.renderer.setVirtualCameraOffset()
     }
-  }
-  
-  @IBAction func togglePreviewTap(_ gesture: UITapGestureRecognizer) {
-    togglePreview = !togglePreview
   }
   
   // MARK: Capturing Photos
   
   @IBAction func capturePhoto(_ sender: UIButton) {
-    camera.capturePhoto(willCapturePhoto: {
-      self.mainPreview.layer.opacity = 0
-      UIView.animate(withDuration: 0.25) {
-        self.mainPreview.layer.opacity = 1
-      }
-    })
-  }
-  
-  // MARK: Recording Movies
-  
-  @IBAction func toggleMovieRecording(_ sender: UIButton) {
-    guard let _ = self.camera.movieFileOutput else {
-      return
-    }
-    
-    // Disable the Camera button until recording finishes, and disable
-    // the Record button until recording starts or finishes.
-    cameraButton.isEnabled = false
-    recordButton.isEnabled = false
-    
-    camera.toggleMovieRecording(onStartRecording: {
-      self.recordButton.isEnabled = true
-      self.recordButton.setTitle(NSLocalizedString("Stop", comment: "Recording button stop title"), for: [])
-    }, onFinishRecording: {
-      // Enable the Camera and Record buttons to let the user switch camera and start another recording.
-      // Only enable the ability to change camera if the device has more than one camera.
-      self.cameraButton.isEnabled = self.camera.canToggleCaptureDevice
-      self.recordButton.isEnabled = true
-      self.recordButton.setTitle(NSLocalizedString("Record", comment: "Recording button record title"), for: [])
-    })
+    camera.capturePhoto()
   }
   
   // MARK: Flash
@@ -363,17 +214,6 @@ class CameraViewController: UIViewController {
       camera.flashMode = .auto
       flashButton.setImage(UIImage(named: "flash_auto"), for: .normal)
     }
-  }
-  
-  // MARK: Filter
-  
-  @IBAction func filterButtonTapped(_ sender: UIButton) {
-    if camera.depthDataOutput.isFilteringEnabled {
-      sender.setImage(UIImage(named: "no_filter"), for: .normal)
-    } else {
-      sender.setImage(UIImage(named: "filter"), for: .normal)
-    }
-    camera.depthDataOutput.isFilteringEnabled = !camera.depthDataOutput.isFilteringEnabled
   }
   
   // MARK: Session

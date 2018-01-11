@@ -8,18 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		0E0871851FD786F900ECE059 /* VideoRecordingProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */; };
-		0E08718C1FD7BEF200ECE059 /* PhotoAlbumViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E08718B1FD7BEF200ECE059 /* PhotoAlbumViewController.m */; };
-		0E08719D1FD7C04B00ECE059 /* WMRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E08718F1FD7C04B00ECE059 /* WMRenderer.m */; };
 		0E08719E1FD7C04B00ECE059 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 0E0871901FD7C04B00ECE059 /* Shaders.metal */; };
-		0E08719F1FD7C04B00ECE059 /* WMUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E0871941FD7C04B00ECE059 /* WMUtilities.m */; };
-		0E0871A01FD7C04B00ECE059 /* WMMeshModel.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E0871971FD7C04B00ECE059 /* WMMeshModel.m */; };
-		0E0871A11FD7C04B00ECE059 /* WMMatrixUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E0871981FD7C04B00ECE059 /* WMMatrixUtilities.m */; };
-		0E0871A21FD7C04B00ECE059 /* WMCamera.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E08719B1FD7C04B00ECE059 /* WMCamera.m */; };
-		0E1304AC1FD8E2C0007BF97E /* PreviewMetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304AB1FD8E2C0007BF97E /* PreviewMetalView.swift */; };
-		0E1304AF1FD8FD82007BF97E /* DepthToGrayscale.metal in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304AE1FD8FD82007BF97E /* DepthToGrayscale.metal */; };
-		0E1304B31FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304B11FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift */; };
-		0E1304B71FD8FE4D007BF97E /* minMaxFromBuffer.m in Sources */ = {isa = PBXBuildFile; fileRef = 0E1304B51FD8FE4D007BF97E /* minMaxFromBuffer.m */; };
 		0E78B8FF1FEC4C9500EDCED7 /* PHPhotoLibrary+Save.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */; };
+		0E8B6DF82004B04F006CD08E /* PhotoAlbumViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8B6DF72004B04F006CD08E /* PhotoAlbumViewController.swift */; };
+		0E8B6DFF2004B08D006CD08E /* VirtualCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8B6DFA2004B08D006CD08E /* VirtualCamera.swift */; };
+		0E8B6E002004B08D006CD08E /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8B6DFB2004B08D006CD08E /* Renderer.swift */; };
+		0E8B6E012004B08D006CD08E /* XYZ.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8B6DFC2004B08D006CD08E /* XYZ.swift */; };
+		0E8B6E022004B08D006CD08E /* Matrix.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8B6DFD2004B08D006CD08E /* Matrix.swift */; };
+		0E8B6E032004B08D006CD08E /* Mesh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E8B6DFE2004B08D006CD08E /* Mesh.swift */; };
 		0EEDB3E81FD7240500EDE147 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3E71FD7240500EDE147 /* AppDelegate.swift */; };
 		0EEDB3ED1FD7240500EDE147 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0EEDB3EB1FD7240500EDE147 /* Main.storyboard */; };
 		0EEDB3EF1FD7240500EDE147 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0EEDB3EE1FD7240500EDE147 /* Assets.xcassets */; };
@@ -27,31 +23,21 @@
 		0EEDB4011FD724AC00EDE147 /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FC1FD724AC00EDE147 /* CameraViewController.swift */; };
 		0EEDB4021FD724AC00EDE147 /* PhotoCaptureProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */; };
 		0EEDB4031FD724AC00EDE147 /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FF1FD724AC00EDE147 /* Camera.swift */; };
+		0EF17C9620057CD700DBC309 /* AVDepthData+CGImageSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */; };
+		0EF8BE742006AF72003F6F18 /* UIImage+CMSampleBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF8BE732006AF72003F6F18 /* UIImage+CMSampleBuffer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecordingProcessor.swift; sourceTree = "<group>"; };
 		0E0871891FD7BEF200ECE059 /* XPLO-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XPLO-Bridging-Header.h"; sourceTree = "<group>"; };
-		0E08718A1FD7BEF200ECE059 /* PhotoAlbumViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PhotoAlbumViewController.h; sourceTree = "<group>"; };
-		0E08718B1FD7BEF200ECE059 /* PhotoAlbumViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PhotoAlbumViewController.m; sourceTree = "<group>"; };
-		0E08718F1FD7C04B00ECE059 /* WMRenderer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WMRenderer.m; sourceTree = "<group>"; };
 		0E0871901FD7C04B00ECE059 /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
-		0E0871911FD7C04B00ECE059 /* WMRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WMRenderer.h; sourceTree = "<group>"; };
-		0E0871931FD7C04B00ECE059 /* WMTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WMTypes.h; sourceTree = "<group>"; };
-		0E0871941FD7C04B00ECE059 /* WMUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WMUtilities.m; sourceTree = "<group>"; };
-		0E0871951FD7C04B00ECE059 /* WMUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WMUtilities.h; sourceTree = "<group>"; };
-		0E0871971FD7C04B00ECE059 /* WMMeshModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WMMeshModel.m; sourceTree = "<group>"; };
-		0E0871981FD7C04B00ECE059 /* WMMatrixUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WMMatrixUtilities.m; sourceTree = "<group>"; };
-		0E0871991FD7C04B00ECE059 /* WMCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WMCamera.h; sourceTree = "<group>"; };
-		0E08719A1FD7C04B00ECE059 /* WMMeshModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WMMeshModel.h; sourceTree = "<group>"; };
-		0E08719B1FD7C04B00ECE059 /* WMCamera.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WMCamera.m; sourceTree = "<group>"; };
-		0E08719C1FD7C04B00ECE059 /* WMMatrixUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WMMatrixUtilities.h; sourceTree = "<group>"; };
-		0E1304AB1FD8E2C0007BF97E /* PreviewMetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewMetalView.swift; sourceTree = "<group>"; };
-		0E1304AE1FD8FD82007BF97E /* DepthToGrayscale.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = DepthToGrayscale.metal; sourceTree = "<group>"; };
-		0E1304B11FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DepthToGrayscaleConverter.swift; sourceTree = "<group>"; };
-		0E1304B51FD8FE4D007BF97E /* minMaxFromBuffer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = minMaxFromBuffer.m; sourceTree = "<group>"; };
-		0E1304B61FD8FE4D007BF97E /* minMaxFromBuffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = minMaxFromBuffer.h; sourceTree = "<group>"; };
 		0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PHPhotoLibrary+Save.swift"; sourceTree = "<group>"; };
+		0E8B6DF72004B04F006CD08E /* PhotoAlbumViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAlbumViewController.swift; sourceTree = "<group>"; };
+		0E8B6DFA2004B08D006CD08E /* VirtualCamera.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VirtualCamera.swift; sourceTree = "<group>"; };
+		0E8B6DFB2004B08D006CD08E /* Renderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		0E8B6DFC2004B08D006CD08E /* XYZ.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = XYZ.swift; sourceTree = "<group>"; };
+		0E8B6DFD2004B08D006CD08E /* Matrix.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Matrix.swift; sourceTree = "<group>"; };
+		0E8B6DFE2004B08D006CD08E /* Mesh.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Mesh.swift; sourceTree = "<group>"; };
 		0EEDB3E41FD7240500EDE147 /* XPLO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XPLO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0EEDB3E71FD7240500EDE147 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0EEDB3EC1FD7240500EDE147 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -61,6 +47,8 @@
 		0EEDB3FC1FD724AC00EDE147 /* CameraViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraViewController.swift; sourceTree = "<group>"; };
 		0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoCaptureProcessor.swift; sourceTree = "<group>"; };
 		0EEDB3FF1FD724AC00EDE147 /* Camera.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
+		0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVDepthData+CGImageSource.swift"; sourceTree = "<group>"; };
+		0EF8BE732006AF72003F6F18 /* UIImage+CMSampleBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+CMSampleBuffer.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,55 +62,12 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0E08718D1FD7C04B00ECE059 /* WiggleMe */ = {
-			isa = PBXGroup;
-			children = (
-				0E08718E1FD7C04B00ECE059 /* Renderer */,
-				0E0871921FD7C04B00ECE059 /* Common */,
-				0E0871961FD7C04B00ECE059 /* Engine */,
-			);
-			path = WiggleMe;
-			sourceTree = "<group>";
-		};
-		0E08718E1FD7C04B00ECE059 /* Renderer */ = {
-			isa = PBXGroup;
-			children = (
-				0E0871911FD7C04B00ECE059 /* WMRenderer.h */,
-				0E08718F1FD7C04B00ECE059 /* WMRenderer.m */,
-			);
-			path = Renderer;
-			sourceTree = "<group>";
-		};
-		0E0871921FD7C04B00ECE059 /* Common */ = {
-			isa = PBXGroup;
-			children = (
-				0E0871931FD7C04B00ECE059 /* WMTypes.h */,
-				0E0871951FD7C04B00ECE059 /* WMUtilities.h */,
-				0E0871941FD7C04B00ECE059 /* WMUtilities.m */,
-			);
-			path = Common;
-			sourceTree = "<group>";
-		};
-		0E0871961FD7C04B00ECE059 /* Engine */ = {
-			isa = PBXGroup;
-			children = (
-				0E08719A1FD7C04B00ECE059 /* WMMeshModel.h */,
-				0E0871971FD7C04B00ECE059 /* WMMeshModel.m */,
-				0E08719C1FD7C04B00ECE059 /* WMMatrixUtilities.h */,
-				0E0871981FD7C04B00ECE059 /* WMMatrixUtilities.m */,
-				0E0871991FD7C04B00ECE059 /* WMCamera.h */,
-				0E08719B1FD7C04B00ECE059 /* WMCamera.m */,
-			);
-			path = Engine;
-			sourceTree = "<group>";
-		};
 		0E0871A31FD7C14E00ECE059 /* Capture */ = {
 			isa = PBXGroup;
 			children = (
-				0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */,
-				0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */,
-				0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */,
 				0EEDB3FF1FD724AC00EDE147 /* Camera.swift */,
+				0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */,
+				0E0871841FD786F900ECE059 /* VideoRecordingProcessor.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -131,19 +76,20 @@
 			isa = PBXGroup;
 			children = (
 				0E0871901FD7C04B00ECE059 /* Shaders.metal */,
-				0E1304AE1FD8FD82007BF97E /* DepthToGrayscale.metal */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
 		};
-		0E1304B01FD8FD99007BF97E /* Depth To Gray */ = {
+		0E8B6DF92004B077006CD08E /* Renderer */ = {
 			isa = PBXGroup;
 			children = (
-				0E1304B11FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift */,
-				0E1304B61FD8FE4D007BF97E /* minMaxFromBuffer.h */,
-				0E1304B51FD8FE4D007BF97E /* minMaxFromBuffer.m */,
+				0E8B6DFB2004B08D006CD08E /* Renderer.swift */,
+				0E8B6DFE2004B08D006CD08E /* Mesh.swift */,
+				0E8B6DFA2004B08D006CD08E /* VirtualCamera.swift */,
+				0E8B6DFD2004B08D006CD08E /* Matrix.swift */,
+				0E8B6DFC2004B08D006CD08E /* XYZ.swift */,
 			);
-			path = "Depth To Gray";
+			path = Renderer;
 			sourceTree = "<group>";
 		};
 		0EEDB3DB1FD7240500EDE147 = {
@@ -167,7 +113,6 @@
 			children = (
 				0E1304AD1FD8E329007BF97E /* Shaders */,
 				0EEDB3FD1FD724AC00EDE147 /* Model */,
-				0EEDB3F91FD724AC00EDE147 /* Views */,
 				0EEDB3FB1FD724AC00EDE147 /* ViewControllers */,
 				0EEDB3E71FD7240500EDE147 /* AppDelegate.swift */,
 				0E0871891FD7BEF200ECE059 /* XPLO-Bridging-Header.h */,
@@ -179,20 +124,11 @@
 			path = XPLO;
 			sourceTree = "<group>";
 		};
-		0EEDB3F91FD724AC00EDE147 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				0E1304AB1FD8E2C0007BF97E /* PreviewMetalView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
 		0EEDB3FB1FD724AC00EDE147 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
 				0EEDB3FC1FD724AC00EDE147 /* CameraViewController.swift */,
-				0E08718A1FD7BEF200ECE059 /* PhotoAlbumViewController.h */,
-				0E08718B1FD7BEF200ECE059 /* PhotoAlbumViewController.m */,
+				0E8B6DF72004B04F006CD08E /* PhotoAlbumViewController.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -200,11 +136,21 @@
 		0EEDB3FD1FD724AC00EDE147 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				0EF17C9220056C3B00DBC309 /* Extensions */,
 				0E0871A31FD7C14E00ECE059 /* Capture */,
-				0E1304B01FD8FD99007BF97E /* Depth To Gray */,
-				0E08718D1FD7C04B00ECE059 /* WiggleMe */,
+				0E8B6DF92004B077006CD08E /* Renderer */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		0EF17C9220056C3B00DBC309 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */,
+				0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */,
+				0EF8BE732006AF72003F6F18 /* UIImage+CMSampleBuffer.swift */,
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -280,23 +226,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0E08719F1FD7C04B00ECE059 /* WMUtilities.m in Sources */,
-				0E0871A01FD7C04B00ECE059 /* WMMeshModel.m in Sources */,
+				0E8B6DFF2004B08D006CD08E /* VirtualCamera.swift in Sources */,
 				0E78B8FF1FEC4C9500EDCED7 /* PHPhotoLibrary+Save.swift in Sources */,
+				0E8B6E002004B08D006CD08E /* Renderer.swift in Sources */,
 				0EEDB4021FD724AC00EDE147 /* PhotoCaptureProcessor.swift in Sources */,
 				0EEDB4031FD724AC00EDE147 /* Camera.swift in Sources */,
-				0E08719D1FD7C04B00ECE059 /* WMRenderer.m in Sources */,
-				0E1304B31FD8FDA2007BF97E /* DepthToGrayscaleConverter.swift in Sources */,
 				0EEDB3E81FD7240500EDE147 /* AppDelegate.swift in Sources */,
-				0E1304B71FD8FE4D007BF97E /* minMaxFromBuffer.m in Sources */,
 				0E0871851FD786F900ECE059 /* VideoRecordingProcessor.swift in Sources */,
 				0E08719E1FD7C04B00ECE059 /* Shaders.metal in Sources */,
-				0E1304AC1FD8E2C0007BF97E /* PreviewMetalView.swift in Sources */,
+				0E8B6E012004B08D006CD08E /* XYZ.swift in Sources */,
+				0EF17C9620057CD700DBC309 /* AVDepthData+CGImageSource.swift in Sources */,
+				0E8B6E022004B08D006CD08E /* Matrix.swift in Sources */,
 				0EEDB4011FD724AC00EDE147 /* CameraViewController.swift in Sources */,
-				0E0871A21FD7C04B00ECE059 /* WMCamera.m in Sources */,
-				0E08718C1FD7BEF200ECE059 /* PhotoAlbumViewController.m in Sources */,
-				0E0871A11FD7C04B00ECE059 /* WMMatrixUtilities.m in Sources */,
-				0E1304AF1FD8FD82007BF97E /* DepthToGrayscale.metal in Sources */,
+				0E8B6E032004B08D006CD08E /* Mesh.swift in Sources */,
+				0E8B6DF82004B04F006CD08E /* PhotoAlbumViewController.swift in Sources */,
+				0EF8BE742006AF72003F6F18 /* UIImage+CMSampleBuffer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -439,7 +383,7 @@
 				INFOPLIST_FILE = XPLO/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sean.fredrick.XPLO;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sean-fredrick.xplo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "XPLO/XPLO-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -458,7 +402,7 @@
 				INFOPLIST_FILE = XPLO/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.1;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.sean.fredrick.XPLO;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sean-fredrick.xplo";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "XPLO/XPLO-Bridging-Header.h";
 				SWIFT_VERSION = 4.0;
