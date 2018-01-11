@@ -45,7 +45,7 @@ vertex VertexOut vert(const device VertexIn*        vertices        [[buffer(0)]
                       unsigned int vid                              [[vertex_id]]) {
   
   const float4 position = float4(vertices[vid].position, 1.0);
-  position.z = position.z + offset.z;
+  position.z = position.z - offset.z;
   
   const float4 rawTexCoords = float4(vertices[vid].texCoords, 0, 1);
   rawTexCoords.x = rawTexCoords.x - 0.5;
