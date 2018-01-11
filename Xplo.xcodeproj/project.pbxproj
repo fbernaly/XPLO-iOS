@@ -25,6 +25,7 @@
 		0EEDB4021FD724AC00EDE147 /* PhotoCaptureProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */; };
 		0EEDB4031FD724AC00EDE147 /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEDB3FF1FD724AC00EDE147 /* Camera.swift */; };
 		0EF17C9620057CD700DBC309 /* AVDepthData+CGImageSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */; };
+		0EF8BE742006AF72003F6F18 /* UIImage+CMSampleBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF8BE732006AF72003F6F18 /* UIImage+CMSampleBuffer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 		0EEDB3FE1FD724AC00EDE147 /* PhotoCaptureProcessor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhotoCaptureProcessor.swift; sourceTree = "<group>"; };
 		0EEDB3FF1FD724AC00EDE147 /* Camera.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Camera.swift; sourceTree = "<group>"; };
 		0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVDepthData+CGImageSource.swift"; sourceTree = "<group>"; };
+		0EF8BE732006AF72003F6F18 /* UIImage+CMSampleBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+CMSampleBuffer.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +159,7 @@
 			children = (
 				0E78B8FE1FEC4C9400EDCED7 /* PHPhotoLibrary+Save.swift */,
 				0EF17C9520057CD700DBC309 /* AVDepthData+CGImageSource.swift */,
+				0EF8BE732006AF72003F6F18 /* UIImage+CMSampleBuffer.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -249,6 +252,7 @@
 				0EEDB4011FD724AC00EDE147 /* CameraViewController.swift in Sources */,
 				0E8B6E032004B08D006CD08E /* Mesh.swift in Sources */,
 				0E8B6DF82004B04F006CD08E /* PhotoAlbumViewController.swift in Sources */,
+				0EF8BE742006AF72003F6F18 /* UIImage+CMSampleBuffer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
