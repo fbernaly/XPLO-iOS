@@ -131,7 +131,8 @@ class Renderer: NSObject {
   func update(depthData: AVDepthData,
               image: UIImage,
               orientation: CGImagePropertyOrientation,
-              mirroring: Bool = false) {
+              radians: Float,
+              mirroring: Bool) {
     guard let device = view?.device,
       let cgImage = image.cgImage else {
         return
@@ -145,19 +146,6 @@ class Renderer: NSObject {
     self.texture = texture
     
     // texture rotation
-    var radians: Float = 0
-    if !self.live {
-      switch orientation {
-      case .down:
-        radians = .pi
-      case .right:
-        radians = .pi / 2
-      case .left:
-        radians = -.pi / 2
-      default:
-        radians = 0
-      }
-    }
     let v = vector3(0, 0, Float(1.0))
     let cos = cosf(radians)
     let cosp = 1.0 - cos

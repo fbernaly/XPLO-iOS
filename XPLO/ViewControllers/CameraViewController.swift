@@ -168,6 +168,7 @@ class CameraViewController: UIViewController {
         self.renderer.update(depthData: depthData,
                              image: image,
                              orientation: orientation,
+                             radians: 0,
                              mirroring: mirroring)
       }
     }

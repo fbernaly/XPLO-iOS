@@ -165,8 +165,37 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
                                                   let depthData = AVDepthData(fromSource: source) else {
                                                     return
                                                 }
+                                                
+                                                var xplo = false
+                                                PHAssetCollection.fetchAssetCollectionsContaining(asset, with: .album, options: nil)
+                                                  .enumerateObjects({ (album, _, _) in
+                                                    if let title = album.localizedTitle,
+                                                      title == "XPLO" {
+                                                      xplo = true
+                                                    }
+                                                  })
+                                                
+                                                var radians: Float = 0
+                                                if !xplo {
+                                                  switch orientation {
+                                                  case .down:
+                                                    radians = .pi
+                                                  case .right:
+                                                    radians = .pi / 2
+                                                  case .left:
+                                                    radians = -.pi / 2
+                                                  default:
+                                                    radians = 0
+                                                  }
+                                                }
+                                                
                                                 self.isPhotoSelected = true
-                                                self.renderer.update(depthData: depthData, image: image, orientation: orientation)
+                                                self.renderer.live = false
+                                                self.renderer.update(depthData: depthData,
+                                                                     image: image,
+                                                                     orientation: orientation,
+                                                                     radians: radians,
+                                                                     mirroring: false)
                                                 self.setDefaultOffset()
     }
   }
