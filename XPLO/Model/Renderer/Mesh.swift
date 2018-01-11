@@ -20,13 +20,15 @@ class Mesh: NSObject {
   private(set) var zMax = Float()
   private(set) var offset: Float = 0
   
-  init(size: CGSize = CGSize(width: 100, height: 100)) {
+  init(size: CGSize = CGSize(width: 200, height: 200)) {
     self.size = size
     super.init()
     self.computeIndices()
   }
   
-  func computeDepthData(_ depthData: AVDepthData) {
+  func computeDepthData(_ depthData: AVDepthData,
+                        orientation: CGImagePropertyOrientation,
+                        mirroring: Bool) {
     points.removeAll()
     zMin = .greatestFiniteMagnitude
     zMax = .leastNormalMagnitude
@@ -57,17 +59,41 @@ class Mesh: NSObject {
           let pointer = baseAddress.advanced(by: Int(y) * rowBytesSize + Int(x) * MemoryLayout<Float>.size)
           let d = pointer.load(as: Float.self)
           
+          // 3D point
           let z: Float = 100.0 / d
-          x = (x - 0.5 * Float(depthMapWidth)) / 10
-          y = -(y - 0.5 * Float(depthMapHeight)) / 10
+          let scale: Float = 10
+          x = (x - 0.5 * Float(depthMapWidth)) / scale
+          y = (y - 0.5 * Float(depthMapHeight)) / scale
           
-          swap(&x, &y)
+          // orientation
+          switch orientation {
+          case .right:
+            y = -y
+            swap(&x, &y)
+            
+          case .down:
+            x = -x
+            y = -y
+            
+          default:
+            break
+          }
           
+          if mirroring {
+            x = -x
+          }
+          
+          // offset
           zMin = min(zMin, z)
           zMax = max(zMax, z)
           offset += z
           
-          let point = [x, y, z, 1.0]
+          // texture
+          let tx = Float(i) / Float(size.width - 1)
+          let ty = Float(j) / Float(size.height - 1)
+          
+          // buffer
+          let point = [x, y, z, tx, ty]
           points.append(contentsOf: point)
         }
       }
