@@ -20,7 +20,7 @@ class Mesh: NSObject {
   private(set) var zMax = Float()
   private(set) var offset: Float = 0
   
-  init(size: CGSize = CGSize(width: 200, height: 200)) {
+  init(size: CGSize = CGSize(width: 150, height: 150)) {
     self.size = size
     super.init()
     self.computeIndices()
@@ -28,7 +28,8 @@ class Mesh: NSObject {
   
   func computeDepthData(_ depthData: AVDepthData,
                         orientation: CGImagePropertyOrientation,
-                        mirroring: Bool) {
+                        mirroring: Bool,
+                        maxDepth: Float) {
     points.removeAll()
     zMin = .greatestFiniteMagnitude
     zMax = .leastNormalMagnitude
@@ -60,7 +61,7 @@ class Mesh: NSObject {
           let d = pointer.load(as: Float.self)
           
           // 3D point
-          let z: Float = 100.0 / d
+          let z: Float = min(100.0 / d, maxDepth)
           let scale: Float = 10
           x = (x - 0.5 * Float(depthMapWidth)) / scale
           y = (y - 0.5 * Float(depthMapHeight)) / scale
@@ -89,8 +90,8 @@ class Mesh: NSObject {
           offset += z
           
           // texture
-          let tx = Float(i) / Float(size.width - 1)
-          let ty = Float(j) / Float(size.height - 1)
+          let tx = Float(i) / Float(size.width)
+          let ty = Float(j) / Float(size.height)
           
           // buffer
           let point = [x, y, z, tx, ty]
