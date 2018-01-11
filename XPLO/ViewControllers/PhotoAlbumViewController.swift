@@ -126,7 +126,7 @@ class PhotoAlbumViewController: UIViewController {
   
   func setDefaultOffset() {
     let mesh = self.renderer.mesh
-    let offset = -mesh.zMax + mesh.offset - 100
+    let offset = mesh.zMin - mesh.offset - 100
     self.renderer.setVirtualCameraOffset(offset)
   }
   
@@ -194,7 +194,8 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
                                                                      image: image,
                                                                      orientation: orientation,
                                                                      radians: radians,
-                                                                     mirroring: false)
+                                                                     mirroring: false,
+                                                                     maxDepth: 200)
                                                 self.setDefaultOffset()
     }
   }

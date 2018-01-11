@@ -49,6 +49,7 @@ class CameraViewController: UIViewController {
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
+    setVirtualCameraOffset()
     camera.start() { (result) in
       switch result {
       case .success:
@@ -91,7 +92,6 @@ class CameraViewController: UIViewController {
   
   override func viewWillDisappear(_ animated: Bool) {
     camera.stop()
-    renderer.setVirtualCameraOffset()
     super.viewWillDisappear(animated)
   }
   
@@ -168,7 +168,8 @@ class CameraViewController: UIViewController {
                              image: image,
                              orientation: orientation,
                              radians: 0,
-                             mirroring: mirroring)
+                             mirroring: mirroring,
+                             maxDepth: 350.0)
       }
     }
   }
@@ -188,8 +189,12 @@ class CameraViewController: UIViewController {
       self.flashButton.isEnabled = true
       self.cameraButton.isEnabled = true
       self.photoButton.isEnabled = true
-      self.renderer.setVirtualCameraOffset()
+      self.setVirtualCameraOffset()
     }
+  }
+  
+  func setVirtualCameraOffset() {
+     renderer.setVirtualCameraOffset(self.camera.videoDeviceInput.device.position == .front ? -100 : -50)
   }
   
   // MARK: Capturing Photos
