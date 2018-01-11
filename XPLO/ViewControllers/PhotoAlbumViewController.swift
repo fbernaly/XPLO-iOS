@@ -15,12 +15,15 @@ class PhotoAlbumViewController: UIViewController {
   @IBOutlet weak var metalView: MTKView!
   @IBOutlet weak var photoAlbumButton: UIButton!
   @IBOutlet weak var wiggleButton: UIButton!
+  @IBOutlet weak var collectionView: UICollectionView!
+  @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
   
   private var renderer:Renderer!
   private var lastScale: CGFloat = 0
-  private var isPhotoSelected = false
   private var timer:Timer?
   private var angle: Float = 0
+  private var images = [UIImage]()
+  private var assets = [PHAsset]()
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -36,13 +39,9 @@ class PhotoAlbumViewController: UIViewController {
     let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self,
                                                           action: #selector(PhotoAlbumViewController.pinchGestureRecognizer(_:)))
     view.addGestureRecognizer(pinchGestureRecognizer)
-  }
-  
-  override func viewDidAppear(_ animated: Bool) {
-    super.viewDidAppear(animated)
     
-    if !isPhotoSelected {
-      selectPhoto()
+    DispatchQueue.global().async {
+      self.fetchXploAssets()
     }
   }
   
@@ -130,33 +129,63 @@ class PhotoAlbumViewController: UIViewController {
     self.renderer.setVirtualCameraOffset(offset)
   }
   
-}
-
-extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+  //MARK: assets
   
-  func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-    picker.dismiss(animated: true, completion: nil)
-    if !isPhotoSelected {
-      self.dismiss(animated: true, completion: nil)
+  func fetchXploAssets() {
+    guard let album = PHPhotoLibrary.shared().findAlbum(albumName: "XPLO") else {
+      return
+    }
+    
+    self.assets.removeAll()
+    self.images.removeAll()
+    
+    let assets = PHAsset.fetchAssets(in: album, options: nil)
+    assets.enumerateObjects { (asset, _, _) in
+      if let image = self.fetchImage(asset: asset) {
+        self.images.insert(image, at: 0)
+        self.assets.insert(asset, at: 0)
+      }
+    }
+    DispatchQueue.main.async {
+      self.collectionView.reloadData()
+      self.activityIndicator.stopAnimating()
+    }
+    if let asset = self.assets.first {
+      fetchDepth(asset: asset)
     }
   }
   
-  func imagePickerController(_ picker: UIImagePickerController,
-                             didFinishPickingMediaWithInfo info: [String : Any]) {
-    picker.dismiss(animated: true, completion: nil)
-    
-    guard let asset = info[UIImagePickerControllerPHAsset] as? PHAsset,
-      let image =  info[UIImagePickerControllerOriginalImage] as? UIImage else {
-        return
+  func fetchImage(asset: PHAsset) -> UIImage? {
+    var output: UIImage?
+    let options = PHImageRequestOptions()
+    options.isSynchronous = true
+    options.version = .original
+    options.isNetworkAccessAllowed = true
+    let imageManager = PHCachingImageManager()
+    let size = CGSize(width: asset.pixelWidth,
+                      height: asset.pixelHeight)
+    imageManager.requestImage(for: asset,
+                              targetSize: size,
+                              contentMode: .aspectFill,
+                              options: options,
+                              resultHandler: { (image, _) in
+                                output = image
+    })
+    return output
+  }
+  
+  func fetchDepth(asset: PHAsset) {
+    guard let image = self.fetchImage(asset: asset) else {
+      return
     }
     
-    let imageRequestOptions = PHImageRequestOptions()
-    imageRequestOptions.isSynchronous = true
-    imageRequestOptions.version = .original
-    imageRequestOptions.isNetworkAccessAllowed = true
+    let options = PHImageRequestOptions()
+    options.isSynchronous = true
+    options.version = .original
+    options.isNetworkAccessAllowed = true
     
     PHImageManager.default().requestImageData(for: asset,
-                                              options: imageRequestOptions) { (data, _, _, _) in
+                                              options: options) { (data, _, _, _) in
                                                 guard let data = data,
                                                   let source = CGImageSourceCreateWithData(data as CFData, nil),
                                                   let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String : Any],
@@ -166,30 +195,18 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
                                                     return
                                                 }
                                                 
-                                                var xplo = false
-                                                PHAssetCollection.fetchAssetCollectionsContaining(asset, with: .album, options: nil)
-                                                  .enumerateObjects({ (album, _, _) in
-                                                    if let title = album.localizedTitle,
-                                                      title == "XPLO" {
-                                                      xplo = true
-                                                    }
-                                                  })
-                                                
                                                 var radians: Float = 0
-                                                if !xplo {
-                                                  switch orientation {
-                                                  case .down:
-                                                    radians = .pi
-                                                  case .right:
-                                                    radians = .pi / 2
-                                                  case .left:
-                                                    radians = -.pi / 2
-                                                  default:
-                                                    radians = 0
-                                                  }
+                                                switch orientation {
+                                                case .down:
+                                                  radians = .pi
+                                                case .right:
+                                                  radians = .pi / 2
+                                                case .left:
+                                                  radians = -.pi / 2
+                                                default:
+                                                  radians = 0
                                                 }
                                                 
-                                                self.isPhotoSelected = true
                                                 self.renderer.update(depthData: depthData,
                                                                      image: image,
                                                                      orientation: orientation,
@@ -198,6 +215,52 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
                                                                      maxDepth: 200)
                                                 self.setDefaultOffset()
     }
+  }
+  
+}
+
+extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+  
+  func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+    picker.dismiss(animated: true, completion: nil)
+    if self.images.count == 0 {
+      self.dismiss(animated: true, completion: nil)
+    }
+  }
+  
+  func imagePickerController(_ picker: UIImagePickerController,
+                             didFinishPickingMediaWithInfo info: [String : Any]) {
+    picker.dismiss(animated: true, completion: nil)
+    guard let asset = info[UIImagePickerControllerPHAsset] as? PHAsset else {
+      return
+    }
+    fetchDepth(asset: asset)
+  }
+  
+}
+
+extension PhotoAlbumViewController: UICollectionViewDataSource {
+  
+  func collectionView(_ collectionView: UICollectionView,
+                      numberOfItemsInSection section: Int) -> Int {
+    return self.images.count
+  }
+  
+  func collectionView(_ collectionView: UICollectionView,
+                      cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
+    cell.layer.cornerRadius = 5
+    (cell.viewWithTag(1) as? UIImageView)?.image = self.images[indexPath.row]
+    return cell
+  }
+}
+
+extension PhotoAlbumViewController: UICollectionViewDelegate {
+  
+  func collectionView(_ collectionView: UICollectionView,
+                      didSelectItemAt indexPath: IndexPath) {
+    let asset = self.assets[indexPath.row]
+    fetchDepth(asset: asset)
   }
   
 }

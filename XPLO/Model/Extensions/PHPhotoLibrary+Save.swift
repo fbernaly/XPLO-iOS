@@ -59,7 +59,7 @@ extension PHPhotoLibrary {
   
   // MARK: - Private
   
-  private func findAlbum(albumName: String) -> PHAssetCollection? {
+  func findAlbum(albumName: String) -> PHAssetCollection? {
     let fetchOptions = PHFetchOptions()
     fetchOptions.predicate = NSPredicate(format: "title = %@", albumName)
     let fetchResult : PHFetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
