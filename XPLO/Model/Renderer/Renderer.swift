@@ -25,21 +25,17 @@ class Renderer: NSObject {
   private var view: MTKView?
   private var texture: MTLTexture?
   private var camera = VirtualCamera()
-  private var mirroring = false;
   
   private var lastFrameTime: TimeInterval = 0.0
   private var angularVelocity: CGPoint = .zero
-  var position: XYZ
-  var rotation: XYZ
-  let mesh: Mesh
+  var position: XYZ = XYZ(x: 0, y: 0, z: 0)
+  var rotation: XYZ = XYZ(x: 0, y: 0, z: 0)
+  let mesh: Mesh = Mesh()
   
   private static let kVelocityScale: CGFloat = 0.005
-  private static let kRotationDamping: CGFloat = 0.98
+  private static let kRotationDamping: CGFloat = 0.85
   
   init(withView view: MTKView) {
-    self.position = XYZ(x: 0, y: 0, z: 0)
-    self.rotation = XYZ(x: 0, y: 0, z: 0)
-    self.mesh = Mesh()
     super.init()
     
     self.view = view
@@ -50,8 +46,6 @@ class Renderer: NSObject {
     self.view?.depthStencilPixelFormat = .depth32Float_stencil8
     
     initMetal()
-    
-    setVirtualCameraOffset()
   }
   
   func initMetal() {
@@ -132,12 +126,12 @@ class Renderer: NSObject {
               image: UIImage,
               orientation: CGImagePropertyOrientation,
               radians: Float,
-              mirroring: Bool) {
+              mirroring: Bool,
+              maxDepth: Float) {
     guard let device = view?.device,
       let cgImage = image.cgImage else {
         return
     }
-    self.mirroring = mirroring
     
     // create texture
     let loader = MTKTextureLoader(device: device)
@@ -177,7 +171,8 @@ class Renderer: NSObject {
     // create mesh
     mesh.computeDepthData(depthData,
                           orientation: orientation,
-                          mirroring:  mirroring)
+                          mirroring:  mirroring,
+                          maxDepth: maxDepth)
     let points = mesh.points
     
     // update render params
@@ -187,13 +182,13 @@ class Renderer: NSObject {
                                      length: datasize,
                                      options: [])
     
-    var offset = XYZ(x: 0, y: 0, z: -mesh.offset)
+    var offset = XYZ(x: 0, y: 0, z: mesh.offset)
     offsetParams = device.makeBuffer(bytes: &offset,
                                      length: MemoryLayout<XYZ>.size,
                                      options: .cpuCacheModeWriteCombined)
   }
   
-  func setVirtualCameraOffset(_ offset: Float = -200) {
+  func setVirtualCameraOffset(_ offset: Float) {
     position.x = 0
     position.y = 0
     position.z = offset
@@ -226,7 +221,6 @@ extension Renderer: MTKViewDelegate {
     
     renderEncoder.setDepthStencilState(depthStencilState)
     renderEncoder.setFrontFacing(.counterClockwise)
-    renderEncoder.setCullMode(self.mirroring ? .front : .back)
     renderEncoder.setRenderPipelineState(renderPipelineState)
     if let pointsBuffer = self.pointsBuffer,
       let renderParams = self.renderParams,
