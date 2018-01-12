@@ -22,7 +22,7 @@ class PhotoAlbumViewController: UIViewController {
   private var lastScale: CGFloat = 0
   private var timer:Timer?
   private var angle: Float = 0
-  private var images = [UIImage]()
+  private var images = [PHAsset : UIImage]()
   private var assets = [PHAsset]()
   
   override func viewDidLoad() {
@@ -43,6 +43,9 @@ class PhotoAlbumViewController: UIViewController {
     DispatchQueue.global().async {
       self.fetchXploAssets()
     }
+    
+    wiggleButton.isSelected = true
+    wiggleButtonTapped(wiggleButton)
   }
   
   override func viewWillDisappear(_ animated: Bool) {
@@ -125,7 +128,7 @@ class PhotoAlbumViewController: UIViewController {
   
   func setDefaultOffset() {
     let mesh = self.renderer.mesh
-    let offset = mesh.zMin - mesh.offset - 100
+    let offset = -mesh.offset - 80
     self.renderer.setVirtualCameraOffset(offset)
   }
   
@@ -141,10 +144,7 @@ class PhotoAlbumViewController: UIViewController {
     
     let assets = PHAsset.fetchAssets(in: album, options: nil)
     assets.enumerateObjects { (asset, _, _) in
-      if let image = self.fetchImage(asset: asset) {
-        self.images.insert(image, at: 0)
-        self.assets.insert(asset, at: 0)
-      }
+      self.assets.insert(asset, at: 0)
     }
     DispatchQueue.main.async {
       self.collectionView.reloadData()
@@ -155,65 +155,78 @@ class PhotoAlbumViewController: UIViewController {
     }
   }
   
-  func fetchImage(asset: PHAsset) -> UIImage? {
-    var output: UIImage?
-    let options = PHImageRequestOptions()
-    options.isSynchronous = true
-    options.version = .original
-    options.isNetworkAccessAllowed = true
-    let imageManager = PHCachingImageManager()
-    let size = CGSize(width: asset.pixelWidth,
-                      height: asset.pixelHeight)
-    imageManager.requestImage(for: asset,
-                              targetSize: size,
-                              contentMode: .aspectFill,
-                              options: options,
-                              resultHandler: { (image, _) in
-                                output = image
-    })
-    return output
-  }
-  
-  func fetchDepth(asset: PHAsset) {
-    guard let image = self.fetchImage(asset: asset) else {
+  func fetchImage(asset: PHAsset,
+                  completion: @escaping (UIImage?) -> Void ) {
+    if let image = self.images[asset] {
+      completion(image)
       return
     }
     
-    let options = PHImageRequestOptions()
-    options.isSynchronous = true
-    options.version = .original
-    options.isNetworkAccessAllowed = true
-    
-    PHImageManager.default().requestImageData(for: asset,
-                                              options: options) { (data, _, _, _) in
-                                                guard let data = data,
-                                                  let source = CGImageSourceCreateWithData(data as CFData, nil),
-                                                  let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String : Any],
-                                                  let rawValue = properties[kCGImagePropertyOrientation as String] as? UInt32,
-                                                  let orientation = CGImagePropertyOrientation(rawValue: rawValue),
-                                                  let depthData = AVDepthData(fromSource: source) else {
-                                                    return
-                                                }
-                                                
-                                                var radians: Float = 0
-                                                switch orientation {
-                                                case .down:
-                                                  radians = .pi
-                                                case .right:
-                                                  radians = .pi / 2
-                                                case .left:
-                                                  radians = -.pi / 2
-                                                default:
-                                                  radians = 0
-                                                }
-                                                
-                                                self.renderer.update(depthData: depthData,
-                                                                     image: image,
-                                                                     orientation: orientation,
-                                                                     radians: radians,
-                                                                     mirroring: false,
-                                                                     maxDepth: 200)
-                                                self.setDefaultOffset()
+    DispatchQueue.global().async {
+      let options = PHImageRequestOptions()
+      options.isSynchronous = false
+      options.version = .original
+      options.isNetworkAccessAllowed = true
+      let imageManager = PHCachingImageManager()
+      let size = CGSize(width: asset.pixelWidth,
+                        height: asset.pixelHeight)
+      imageManager.requestImage(for: asset,
+                                targetSize: size,
+                                contentMode: .aspectFill,
+                                options: options,
+                                resultHandler: { (image, _) in
+                                  if let image = image {
+                                    self.images[asset] = image
+                                  }
+                                  DispatchQueue.main.async {
+                                    completion(image)
+                                  }
+      })
+    }
+  }
+  
+  func fetchDepth(asset: PHAsset) {
+    fetchImage(asset: asset) { (image) in
+      guard let image = image else {
+        return
+      }
+      
+      let options = PHImageRequestOptions()
+      options.isSynchronous = false
+      options.version = .original
+      options.isNetworkAccessAllowed = true
+      
+      PHImageManager.default().requestImageData(for: asset,
+                                                options: options) { (data, _, _, _) in
+                                                  guard let data = data,
+                                                    let source = CGImageSourceCreateWithData(data as CFData, nil),
+                                                    let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String : Any],
+                                                    let rawValue = properties[kCGImagePropertyOrientation as String] as? UInt32,
+                                                    let orientation = CGImagePropertyOrientation(rawValue: rawValue),
+                                                    let depthData = AVDepthData(fromSource: source) else {
+                                                      return
+                                                  }
+                                                  
+                                                  var radians: Float = 0
+                                                  switch orientation {
+                                                  case .down:
+                                                    radians = .pi
+                                                  case .right:
+                                                    radians = .pi / 2
+                                                  case .left:
+                                                    radians = -.pi / 2
+                                                  default:
+                                                    radians = 0
+                                                  }
+                                                  
+                                                  self.renderer.update(depthData: depthData,
+                                                                       image: image,
+                                                                       orientation: orientation,
+                                                                       radians: radians,
+                                                                       mirroring: false,
+                                                                       maxDepth: 200)
+                                                  self.setDefaultOffset()
+      }
     }
   }
   
@@ -223,7 +236,7 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
   
   func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
     picker.dismiss(animated: true, completion: nil)
-    if self.images.count == 0 {
+    if self.assets.count == 0 {
       self.dismiss(animated: true, completion: nil)
     }
   }
@@ -243,16 +256,20 @@ extension PhotoAlbumViewController: UICollectionViewDataSource {
   
   func collectionView(_ collectionView: UICollectionView,
                       numberOfItemsInSection section: Int) -> Int {
-    return self.images.count
+    return self.assets.count
   }
   
   func collectionView(_ collectionView: UICollectionView,
                       cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
     cell.layer.cornerRadius = 5
-    (cell.viewWithTag(1) as? UIImageView)?.image = self.images[indexPath.row]
+    let imageView = cell.viewWithTag(1) as? UIImageView
+    self.fetchImage(asset: self.assets[indexPath.row]) { (image) in
+      imageView?.image = image
+    }
     return cell
   }
+  
 }
 
 extension PhotoAlbumViewController: UICollectionViewDelegate {

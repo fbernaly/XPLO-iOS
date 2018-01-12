@@ -194,7 +194,7 @@ class CameraViewController: UIViewController {
   }
   
   func setVirtualCameraOffset() {
-     renderer.setVirtualCameraOffset(self.camera.videoDeviceInput.device.position == .front ? -100 : -50)
+     renderer.setVirtualCameraOffset(self.camera.videoDeviceInput.device.position == .front ? -150 : -50)
   }
   
   // MARK: Capturing Photos
