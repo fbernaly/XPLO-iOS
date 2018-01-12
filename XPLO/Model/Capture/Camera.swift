@@ -9,6 +9,8 @@
 import AVFoundation
 import Photos
 
+let kAlbumName = "XPLO"
+
 enum SessionSetupResult {
   case success
   case notAuthorized

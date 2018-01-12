@@ -135,7 +135,7 @@ class PhotoAlbumViewController: UIViewController {
   //MARK: assets
   
   func fetchXploAssets() {
-    guard let album = PHPhotoLibrary.shared().findAlbum(albumName: "XPLO") else {
+    guard let album = PHPhotoLibrary.shared().findAlbum(albumName: kAlbumName) else {
       DispatchQueue.main.async {
         self.activityIndicator.stopAnimating()
         self.selectPhoto()

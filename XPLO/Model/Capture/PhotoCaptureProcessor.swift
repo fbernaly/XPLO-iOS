@@ -111,7 +111,7 @@ extension PhotoCaptureProcessor: AVCapturePhotoCaptureDelegate {
     }
     
     PHPhotoLibrary.shared().savePhoto(photoData: photoData,
-                                      albumName: "XPLO",
+                                      albumName: kAlbumName,
                                       requestedPhotoSettings: self.requestedPhotoSettings) { (_) in
                                         self.didFinish()
     }
