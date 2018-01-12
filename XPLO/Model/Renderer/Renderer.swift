@@ -23,7 +23,7 @@ class Renderer: NSObject {
   private var textureRotationParams: MTLBuffer?
   private var offsetParams: MTLBuffer?
   private var view: MTKView?
-  private var texture: MTLTexture?
+  private(set) var texture: MTLTexture?
   private var camera = VirtualCamera()
   
   private var lastFrameTime: TimeInterval = 0.0

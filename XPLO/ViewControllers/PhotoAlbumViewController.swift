@@ -136,6 +136,10 @@ class PhotoAlbumViewController: UIViewController {
   
   func fetchXploAssets() {
     guard let album = PHPhotoLibrary.shared().findAlbum(albumName: "XPLO") else {
+      DispatchQueue.main.async {
+        self.activityIndicator.stopAnimating()
+        self.selectPhoto()
+      }
       return
     }
     
@@ -236,7 +240,8 @@ extension PhotoAlbumViewController: UINavigationControllerDelegate, UIImagePicke
   
   func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
     picker.dismiss(animated: true, completion: nil)
-    if self.assets.count == 0 {
+    if self.assets.count == 0,
+      self.renderer.texture == nil {
       self.dismiss(animated: true, completion: nil)
     }
   }
