@@ -151,8 +151,10 @@ class PhotoAlbumViewController: UIViewController {
       self.assets.insert(asset, at: 0)
     }
     DispatchQueue.main.async {
-      self.collectionView.reloadData()
       self.activityIndicator.stopAnimating()
+      if self.assets.count > 1 {
+        self.collectionView.reloadData()
+      }
     }
     if let asset = self.assets.first {
       fetchDepth(asset: asset)
