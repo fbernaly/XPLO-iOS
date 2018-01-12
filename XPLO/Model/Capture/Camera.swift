@@ -30,7 +30,7 @@ class Camera : NSObject {
   
   private(set) var movieFileOutput: AVCaptureMovieFileOutput?
   private(set) var outputSynchronizer: AVCaptureDataOutputSynchronizer?
-  private(set) var videoDeviceInput: AVCaptureDeviceInput!
+  private(set) var videoDeviceInput: AVCaptureDeviceInput?
   private(set) var setupResult: SessionSetupResult = .success
   
   var flashMode: AVCaptureDevice.FlashMode = .auto
@@ -129,7 +129,7 @@ class Camera : NSObject {
         self.setupResult = .configurationFailed
         return
       }
-
+      
       self.configureSession(with: videoDevice)
     }
   }
@@ -218,18 +218,22 @@ class Camera : NSObject {
         return
       }
       
+      guard let videoDeviceInput = self.videoDeviceInput else {
+        return
+      }
+      
       // Add a video input
-      guard self.session.canAddInput(self.videoDeviceInput) else {
+      guard self.session.canAddInput(videoDeviceInput) else {
         print("Could not add video device input to the session")
         self.setupResult = .configurationFailed
         self.session.commitConfiguration()
         return
       }
-      self.session.addInput(self.videoDeviceInput)
+      self.session.addInput(videoDeviceInput)
       NotificationCenter.default.addObserver(self,
                                              selector: #selector(self.subjectAreaDidChange),
                                              name: .AVCaptureDeviceSubjectAreaDidChange,
-                                             object: self.videoDeviceInput.device)
+                                             object: videoDeviceInput.device)
       
       // Add audio input.
       do {
@@ -403,7 +407,7 @@ class Camera : NSObject {
              at devicePoint: CGPoint,
              monitorSubjectAreaChange: Bool) {
     sessionQueue.async {
-      let device = self.videoDeviceInput.device
+      guard let device = self.videoDeviceInput?.device else { return }
       do {
         try device.lockForConfiguration()
       } catch {
@@ -433,11 +437,12 @@ class Camera : NSObject {
   // MARK: Toggle Capture Device
   
   func toggleCaptureDevice(completion: @escaping () -> Void) {
-    guard canToggleCaptureDevice else {
-      return
+    guard canToggleCaptureDevice,
+      let videoDeviceInput = self.videoDeviceInput else {
+        return
     }
     
-    let currentVideoDevice = self.videoDeviceInput.device
+    let currentVideoDevice = videoDeviceInput.device
     let currentPosition = currentVideoDevice.position
     let preferredPosition: AVCaptureDevice.Position
     let preferredDeviceType: AVCaptureDevice.DeviceType
@@ -463,8 +468,8 @@ class Camera : NSObject {
     }
     
     guard let videoDevice = newVideoDevice else {
-        print("Error occured while creating video device input")
-        return
+      print("Error occured while creating video device input")
+      return
     }
     
     self.configureSession(with: videoDevice, completion: completion)
@@ -481,7 +486,8 @@ class Camera : NSObject {
         photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
       }
       
-      if self.videoDeviceInput.device.isFlashAvailable {
+      if let videoDeviceInput = self.videoDeviceInput,
+        videoDeviceInput.device.isFlashAvailable {
         photoSettings.flashMode = self.flashMode
       }
       

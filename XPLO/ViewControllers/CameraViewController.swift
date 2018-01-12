@@ -163,7 +163,10 @@ class CameraViewController: UIViewController {
         let depthData = depthData,
         let image = UIImage(sampleBuffer: sampleBuffer) {
         let orientation: CGImagePropertyOrientation = .right
-        let mirroring = self.camera.videoDeviceInput.device.position == .front
+        var mirroring = false
+        if let videoDeviceInput = self.camera.videoDeviceInput {
+          mirroring = videoDeviceInput.device.position == .front
+        }
         self.renderer.update(depthData: depthData,
                              image: image,
                              orientation: orientation,
@@ -194,7 +197,11 @@ class CameraViewController: UIViewController {
   }
   
   func setVirtualCameraOffset() {
-     renderer.setVirtualCameraOffset(self.camera.videoDeviceInput.device.position == .front ? -150 : -50)
+    var offset: Float = -150.0
+    if let videoDeviceInput = self.camera.videoDeviceInput {
+      offset = videoDeviceInput.device.position == .front ? -150 : -50
+    }
+    renderer.setVirtualCameraOffset(offset)
   }
   
   // MARK: Capturing Photos
