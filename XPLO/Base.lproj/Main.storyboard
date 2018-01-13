@@ -57,7 +57,7 @@
                                             <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         </state>
                                         <connections>
-                                            <segue destination="nhP-So-Piv" kind="show" id="bsY-J6-wtw"/>
+                                            <segue destination="nhP-So-Piv" kind="show" identifier="photoAlbum" id="bsY-J6-wtw"/>
                                         </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="1ND-qE-qTI">

@@ -8,6 +8,7 @@
 
 import UIKit
 import MetalKit
+import AVFoundation
 
 class CameraViewController: UIViewController {
   
@@ -34,7 +35,8 @@ class CameraViewController: UIViewController {
     photoButton.isEnabled = false
     flashButton.isEnabled = false
     
-    setupXplo()
+    camera.delegate = self
+    camera.setup()
     
     renderer = Renderer(withView: metalView)
     
@@ -50,44 +52,7 @@ class CameraViewController: UIViewController {
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     setVirtualCameraOffset()
-    camera.start() { (result) in
-      switch result {
-      case .success:
-        break
-        
-      case .notAuthorized:
-        DispatchQueue.main.async {
-          let changePrivacySetting = "XPLO doesn't have permission to use the camera, please change privacy settings"
-          let message = NSLocalizedString(changePrivacySetting, comment: "Alert message when the user has denied access to the camera")
-          let alertController = UIAlertController(title: "XPLO", message: message, preferredStyle: .alert)
-          
-          alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"),
-                                                  style: .cancel,
-                                                  handler: nil))
-          
-          alertController.addAction(UIAlertAction(title: NSLocalizedString("Settings", comment: "Alert button to open Settings"),
-                                                  style: .`default`,
-                                                  handler: { _ in
-                                                    UIApplication.shared.open(URL(string: UIApplicationOpenSettingsURLString)!, options: [:], completionHandler: nil)
-          }))
-          
-          self.present(alertController, animated: true, completion: nil)
-        }
-        
-      case .configurationFailed:
-        DispatchQueue.main.async {
-          let alertMsg = "Alert message when something goes wrong during capture session configuration"
-          let message = NSLocalizedString("Unable to capture media", comment: alertMsg)
-          let alertController = UIAlertController(title: "XPLO", message: message, preferredStyle: .alert)
-          
-          alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"),
-                                                  style: .cancel,
-                                                  handler: nil))
-          
-          self.present(alertController, animated: true, completion: nil)
-        }
-      }
-    }
+    camera.start()
   }
   
   override func viewWillDisappear(_ animated: Bool) {
@@ -110,73 +75,6 @@ class CameraViewController: UIViewController {
     lastScale = pinchGestureRecognizer.scale
   }
   
-  // MARK: Xplo Setup
-  
-  func setupXplo() {
-    camera.onStartRunning = {
-      let isSessionRunning = self.camera.isSessionRunning
-      self.albumButton.isEnabled = isSessionRunning
-      self.flashButton.isEnabled = isSessionRunning
-      // Only enable the ability to change camera if the device has more than one camera.
-      self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
-      self.photoButton.isEnabled = isSessionRunning
-    }
-    camera.onSessionInterrupted = { (reason) in
-      if reason == .audioDeviceInUseByAnotherClient
-        || reason == .videoDeviceInUseByAnotherClient {
-        // Simply fade-in a button to enable the user to try to resume the session running.
-        self.resumeButton.alpha = 0
-        self.resumeButton.isHidden = false
-        UIView.animate(withDuration: 0.25) {
-          self.resumeButton.alpha = 1
-        }
-      } else if reason == .videoDeviceNotAvailableWithMultipleForegroundApps {
-        // Simply fade-in a label to inform the user that the camera is unavailable.
-        self.cameraUnavailableLabel.alpha = 0
-        self.cameraUnavailableLabel.isHidden = false
-        UIView.animate(withDuration: 0.25) {
-          self.cameraUnavailableLabel.alpha = 1
-        }
-      }
-      
-    }
-    camera.onSessionInterruptionEnded = {
-      if !self.resumeButton.isHidden {
-        UIView.animate(withDuration: 0.25,
-                       animations: {
-                        self.resumeButton.alpha = 0
-        }, completion: { _ in
-          self.resumeButton.isHidden = true
-        })
-      }
-      if !self.cameraUnavailableLabel.isHidden {
-        UIView.animate(withDuration: 0.25,
-                       animations: {
-                        self.cameraUnavailableLabel.alpha = 0
-        }, completion: { _ in
-          self.cameraUnavailableLabel.isHidden = true
-        })
-      }
-    }
-    camera.onStream = { (sampleBuffer, depthData) in
-      if let sampleBuffer = sampleBuffer,
-        let depthData = depthData,
-        let image = UIImage(sampleBuffer: sampleBuffer) {
-        let orientation: CGImagePropertyOrientation = .right
-        var mirroring = false
-        if let videoDeviceInput = self.camera.videoDeviceInput {
-          mirroring = videoDeviceInput.device.position == .front
-        }
-        self.renderer.update(depthData: depthData,
-                             image: image,
-                             orientation: orientation,
-                             radians: 0,
-                             mirroring: mirroring,
-                             maxDepth: 350.0)
-      }
-    }
-  }
-  
   // MARK: Device Configuration
   
   @IBAction func toggleCamera(_ sender: UIButton) {
@@ -187,13 +85,7 @@ class CameraViewController: UIViewController {
     flashButton.isEnabled = false
     cameraButton.isEnabled = false
     photoButton.isEnabled = false
-    camera.toggleCaptureDevice() {
-      self.albumButton.isEnabled = true
-      self.flashButton.isEnabled = true
-      self.cameraButton.isEnabled = true
-      self.photoButton.isEnabled = true
-      self.setVirtualCameraOffset()
-    }
+    camera.toggleCaptureDevice()
   }
   
   func setVirtualCameraOffset() {
@@ -231,16 +123,141 @@ class CameraViewController: UIViewController {
   // MARK: Session
   
   @IBAction func resumeInterruptedSession(_ sender: UIButton) {
-    camera.resume() {
-      if !self.camera.isSessionRunning {
-        let message = NSLocalizedString("Unable to resume", comment: "Alert message when unable to resume the session running")
-        let alertController = UIAlertController(title: "XPLO", message: message, preferredStyle: .alert)
-        let cancelAction = UIAlertAction(title: NSLocalizedString("OK", comment: "Alert OK button"), style: .cancel, handler: nil)
-        alertController.addAction(cancelAction)
-        self.present(alertController, animated: true, completion: nil)
-      } else {
-        self.resumeButton.isHidden = true
+    camera.resume()
+    self.resumeButton.isHidden = true
+  }
+  
+}
+
+// MARK: CameraDelegate
+
+extension CameraViewController: CameraDelegate {
+  
+  func camera(_ camera: Camera, error: CameraError) {
+    let appName = "Viewfinder"
+    switch error {
+    case .notAuthorized:
+      let message = "\(appName) doesn't have permission to use the camera, please change privacy settings"
+      let alertController = UIAlertController(title: appName,
+                                              message: message,
+                                              preferredStyle: .alert)
+      alertController.addAction(UIAlertAction(title: NSLocalizedString("Settings", comment: ""),
+                                              style: .`default`,
+                                              handler: { _ in
+                                                UIApplication.shared.open(URL(string: UIApplicationOpenSettingsURLString)!,
+                                                                          options: [:],
+                                                                          completionHandler: nil)
+      }))
+      self.present(alertController, animated: true, completion: nil)
+      
+    case .configurationFailed:
+      let message = "Unable to capture media"
+      let alertController = UIAlertController(title: appName,
+                                              message: message,
+                                              preferredStyle: .alert)
+      alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""),
+                                              style: .cancel,
+                                              handler: nil))
+      self.present(alertController, animated: true, completion: nil)
+      
+    case .resumeSessionFailed:
+      let message = "Unable to resume"
+      let alertController = UIAlertController(title: appName,
+                                              message: message,
+                                              preferredStyle: .alert)
+      alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""),
+                                              style: .cancel,
+                                              handler: nil))
+      self.present(alertController, animated: true, completion: nil)
+      
+    case .unsupportedDevice:
+      let message = "\(appName) doesn't support your device"
+      let alertController = UIAlertController(title: appName,
+                                              message: message,
+                                              preferredStyle: .alert)
+      alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""),
+                                              style: .`default`,
+                                              handler: { _ in
+                                                self.albumButton.isEnabled = true
+                                                self.performSegue(withIdentifier: "photoAlbum", sender: self)
+      }))
+      self.present(alertController, animated: true, completion: nil)
+    }
+  }
+  
+  func cameraDidStartRunning(_ camera: Camera) {
+    let isSessionRunning = camera.isSessionRunning
+    self.albumButton.isEnabled = isSessionRunning
+    self.flashButton.isEnabled = isSessionRunning
+    // Only enable the ability to change camera if the device has more than one camera.
+    self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
+    self.photoButton.isEnabled = isSessionRunning
+  }
+  
+  func camera(_ camera: Camera, sessionInterrupted reason: AVCaptureSession.InterruptionReason) {
+    if reason == .audioDeviceInUseByAnotherClient
+      || reason == .videoDeviceInUseByAnotherClient {
+      // Simply fade-in a button to enable the user to try to resume the session running.
+      self.resumeButton.alpha = 0
+      self.resumeButton.isHidden = false
+      UIView.animate(withDuration: 0.25) {
+        self.resumeButton.alpha = 1
       }
+    } else if reason == .videoDeviceNotAvailableWithMultipleForegroundApps {
+      // Simply fade-in a label to inform the user that the camera is unavailable.
+      self.cameraUnavailableLabel.alpha = 0
+      self.cameraUnavailableLabel.isHidden = false
+      UIView.animate(withDuration: 0.25) {
+        self.cameraUnavailableLabel.alpha = 1
+      }
+    }
+  }
+  
+  func cameraDidEndInterruption(_ camera: Camera) {
+    if !self.resumeButton.isHidden {
+      UIView.animate(withDuration: 0.25,
+                     animations: {
+                      self.resumeButton.alpha = 0
+      }, completion: { _ in
+        self.resumeButton.isHidden = true
+      })
+    }
+    if !self.cameraUnavailableLabel.isHidden {
+      UIView.animate(withDuration: 0.25,
+                     animations: {
+                      self.cameraUnavailableLabel.alpha = 0
+      }, completion: { _ in
+        self.cameraUnavailableLabel.isHidden = true
+      })
+    }
+  }
+  
+  func cameraDidRotate(_ camera: Camera) {
+  }
+  
+  func cameraDidToggle(_ camera: Camera) {
+    self.albumButton.isEnabled = true
+    self.flashButton.isEnabled = true
+    self.cameraButton.isEnabled = true
+    self.photoButton.isEnabled = true
+    self.setVirtualCameraOffset()
+  }
+  
+  func camera(_ camera: Camera, sampleBuffer: CMSampleBuffer?, depthData: AVDepthData?) {
+    if let sampleBuffer = sampleBuffer,
+      let depthData = depthData,
+      let image = UIImage(sampleBuffer: sampleBuffer) {
+      let orientation: CGImagePropertyOrientation = .right
+      var mirroring = false
+      if let videoDeviceInput = self.camera.videoDeviceInput {
+        mirroring = videoDeviceInput.device.position == .front
+      }
+      self.renderer.update(depthData: depthData,
+                           image: image,
+                           orientation: orientation,
+                           radians: 0,
+                           mirroring: mirroring,
+                           maxDepth: 350.0)
     }
   }
   
