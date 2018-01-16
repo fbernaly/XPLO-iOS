@@ -9,6 +9,7 @@
 import UIKit
 import MetalKit
 import AVFoundation
+import Photos
 
 class CameraViewController: UIViewController {
   
@@ -154,6 +155,45 @@ class CameraViewController: UIViewController {
     setVirtualCameraOffset()
   }
   
+  // MARK: Sample
+  
+  func showSamples() {
+    let samples = ["sample00", "sample01", "sample02"]
+    var count = 0
+    for sample in samples {
+      self.save(name: sample, completion: {
+        count += 1
+        if count == samples.count {
+          self.albumButton.isEnabled = true
+          self.performSegue(withIdentifier: "photoAlbum", sender: self)
+        }
+      })
+    }
+  }
+  
+  func save(name: String,
+            completion: @escaping () -> Void) {
+    guard let url = Bundle.main.url(forResource: name, withExtension: "jpg"),
+      let data = try? Data(contentsOf: url) else {
+        return
+    }
+    
+    let photoSettings = AVCapturePhotoSettings()
+    photoSettings.isHighResolutionPhotoEnabled = true
+    photoSettings.isDepthDataDeliveryEnabled = true
+    photoSettings.embedsDepthDataInPhoto = true
+    if let formatType = photoSettings.__availablePreviewPhotoPixelFormatTypes.first {
+      photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: formatType]
+    }
+    PHPhotoLibrary.shared().savePhoto(photoData: data,
+                                      albumName: kAlbumName,
+                                      requestedPhotoSettings: photoSettings) { (_) in
+                                        DispatchQueue.main.async {
+                                          completion()
+                                        }
+    }
+  }
+  
 }
 
 // MARK: CameraDelegate
@@ -205,8 +245,7 @@ extension CameraViewController: CameraDelegate {
       alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""),
                                               style: .`default`,
                                               handler: { _ in
-                                                self.albumButton.isEnabled = true
-                                                self.performSegue(withIdentifier: "photoAlbum", sender: self)
+                                                self.showSamples()
       }))
       self.present(alertController, animated: true, completion: nil)
     }

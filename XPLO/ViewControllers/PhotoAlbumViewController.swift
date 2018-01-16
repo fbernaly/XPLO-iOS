@@ -40,7 +40,7 @@ class PhotoAlbumViewController: UIViewController {
                                                           action: #selector(PhotoAlbumViewController.pinchGestureRecognizer(_:)))
     view.addGestureRecognizer(pinchGestureRecognizer)
     
-    DispatchQueue.global().async {
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.25) {
       self.fetchXploAssets()
     }
     
@@ -164,7 +164,9 @@ class PhotoAlbumViewController: UIViewController {
   func fetchImage(asset: PHAsset,
                   completion: @escaping (UIImage?) -> Void ) {
     if let image = self.images[asset] {
-      completion(image)
+      DispatchQueue.main.async {
+        completion(image)
+      }
       return
     }
     
