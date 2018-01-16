@@ -147,7 +147,7 @@ class CameraViewController: UIViewController {
 extension CameraViewController: CameraDelegate {
   
   func camera(_ camera: Camera, error: CameraError) {
-    let appName = "Viewfinder"
+    let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "XPLO"
     switch error {
     case .notAuthorized:
       let message = "\(appName) doesn't have permission to use the camera, please change privacy settings"
