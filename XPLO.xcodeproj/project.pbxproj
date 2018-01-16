@@ -98,7 +98,9 @@
 				0EEDB3E61FD7240500EDE147 /* XPLO */,
 				0EEDB3E51FD7240500EDE147 /* Products */,
 			);
+			indentWidth = 2;
 			sourceTree = "<group>";
+			tabWidth = 2;
 		};
 		0EEDB3E51FD7240500EDE147 /* Products */ = {
 			isa = PBXGroup;
