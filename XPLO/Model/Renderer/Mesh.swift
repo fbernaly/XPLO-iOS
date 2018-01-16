@@ -14,6 +14,7 @@ import MetalKit
 class Mesh: NSObject {
   
   let size: CGSize
+  var is3D: Bool =  true
   private(set) var points = [Float]()
   private(set) var indices = [UInt32]()
   private(set) var zMin = Float()
@@ -57,11 +58,14 @@ class Mesh: NSObject {
           var x = Float(i) * width
           var y = Float(j) * height
           
-          let pointer = baseAddress.advanced(by: Int(y) * rowBytesSize + Int(x) * MemoryLayout<Float>.size)
-          let d = pointer.load(as: Float.self)
-          
-          // 3D point
-          let z: Float = min(100.0 / d, maxDepth)
+          // point
+          var z: Float = 0
+          if self.is3D {
+            let pointer = baseAddress.advanced(by: Int(y) * rowBytesSize + Int(x) * MemoryLayout<Float>.size)
+            let d = pointer.load(as: Float.self)
+            
+            z =  min(100.0 / d, maxDepth)
+          }
           let scale: Float = 10
           x = (x - 0.5 * Float(depthMapWidth)) / scale
           y = (y - 0.5 * Float(depthMapHeight)) / scale

@@ -91,7 +91,7 @@
                                 </subviews>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" alignment="top" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="aux-aU-OI4">
-                                <rect key="frame" x="10" y="20" width="50" height="50"/>
+                                <rect key="frame" x="10" y="20" width="110" height="50"/>
                                 <subviews>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Z56-X8-hDD">
                                         <rect key="frame" x="0.0" y="0.0" width="50" height="50"/>
@@ -107,7 +107,29 @@
                                             <action selector="flashButtonTapped:" destination="7wT-eC-pyf" eventType="touchUpInside" id="a60-1r-AXk"/>
                                         </connections>
                                     </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="epi-n2-lVW">
+                                        <rect key="frame" x="60" y="0.0" width="50" height="50"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="epi-n2-lVW" secondAttribute="height" multiplier="1:1" id="AaL-EH-65a"/>
+                                            <constraint firstAttribute="width" constant="50" id="Mmn-Pa-Y9I"/>
+                                        </constraints>
+                                        <state key="normal" image="3d">
+                                            <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        </state>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                <integer key="value" value="10"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
+                                        <connections>
+                                            <action selector="displayModeButtonTapped:" destination="7wT-eC-pyf" eventType="touchUpInside" id="JvA-jh-d5o"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
+                                <constraints>
+                                    <constraint firstItem="epi-n2-lVW" firstAttribute="width" secondItem="epi-n2-lVW" secondAttribute="height" multiplier="1:1" id="vSw-9u-9hk"/>
+                                </constraints>
                             </stackView>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -129,6 +151,7 @@
                         <outlet property="albumButton" destination="7Tl-W6-S0j" id="K2n-dv-Lu1"/>
                         <outlet property="cameraButton" destination="Wcu-Zu-xtD" id="7OT-jB-BFu"/>
                         <outlet property="cameraUnavailableLabel" destination="XGH-av-pdF" id="EMS-uC-52F"/>
+                        <outlet property="displayModeButton" destination="epi-n2-lVW" id="aN6-at-pU7"/>
                         <outlet property="flashButton" destination="Z56-X8-hDD" id="zXM-To-R37"/>
                         <outlet property="metalView" destination="gSR-Vp-0Rp" id="7SW-FA-8Sd"/>
                         <outlet property="photoButton" destination="1ND-qE-qTI" id="wex-rM-F6y"/>
@@ -279,6 +302,7 @@
         </scene>
     </scenes>
     <resources>
+        <image name="3d" width="40" height="40"/>
         <image name="back" width="33" height="33"/>
         <image name="capture_photo" width="170" height="170"/>
         <image name="flash_auto" width="25" height="25"/>

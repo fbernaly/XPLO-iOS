@@ -19,6 +19,7 @@ class CameraViewController: UIViewController {
   @IBOutlet weak var cameraButton: UIButton!
   @IBOutlet weak var resumeButton: UIButton!
   @IBOutlet weak var flashButton: UIButton!
+  @IBOutlet weak var displayModeButton: UIButton!
   
   let camera = Camera()
   var renderer:Renderer!
@@ -47,6 +48,8 @@ class CameraViewController: UIViewController {
     let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self,
                                                           action: #selector(CameraViewController.pinchGestureRecognizer(_:)))
     view.addGestureRecognizer(pinchGestureRecognizer)
+    
+    displayModeButtonTapped(displayModeButton)
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -63,6 +66,7 @@ class CameraViewController: UIViewController {
   // MARK: UIGestureRecognizer
   
   @objc func panGestureRecognized(_ panGestureRecognizer: UIPanGestureRecognizer) {
+    guard self.displayModeButton.isSelected else { return }
     let velocity = panGestureRecognizer.velocity(in: panGestureRecognizer.view)
     renderer.setRotationVelocity(velocity)
   }
@@ -91,7 +95,8 @@ class CameraViewController: UIViewController {
   func setVirtualCameraOffset() {
     var offset: Float = -150.0
     if let videoDeviceInput = self.camera.videoDeviceInput {
-      offset = videoDeviceInput.device.position == .front ? -150 : -50
+      offset = videoDeviceInput.device.position == .front ?
+        self.displayModeButton.isSelected ? -150 : -100 : -50
     }
     renderer.setVirtualCameraOffset(offset)
   }
@@ -138,6 +143,15 @@ class CameraViewController: UIViewController {
   @IBAction func resumeInterruptedSession(_ sender: UIButton) {
     camera.resume()
     self.resumeButton.isHidden = true
+  }
+  
+  // MARK: 3D
+  
+  @IBAction func displayModeButtonTapped(_ sender: UIButton) {
+    sender.isSelected = !sender.isSelected
+    sender.backgroundColor = sender.isSelected ? UIColor.white.withAlphaComponent(0.5) : UIColor.clear
+    self.renderer.mesh.is3D = sender.isSelected
+    setVirtualCameraOffset()
   }
   
 }
