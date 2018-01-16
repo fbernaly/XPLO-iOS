@@ -99,7 +99,20 @@ class CameraViewController: UIViewController {
   // MARK: Capturing Photos
   
   @IBAction func capturePhoto(_ sender: UIButton) {
-    camera.capturePhoto()
+    camera.capturePhoto(willCapturePhoto: {
+      self.albumButton.isEnabled = false
+      self.metalView.alpha = 1.0
+      UIView.animate(withDuration: 0.25,
+                     animations: {
+                      self.metalView.alpha = 0.35
+      }, completion: { finished in
+        if finished {
+          self.metalView.alpha = 1.0
+        }
+      })
+    }, completion: {
+      self.albumButton.isEnabled = true
+    })
   }
   
   // MARK: Flash

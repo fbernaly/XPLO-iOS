@@ -528,10 +528,12 @@ class Camera : NSObject {
         // When the capture is complete, remove a reference to the photo capture delegate so it can be deallocated.
         self.sessionQueue.async {
           self.inProgressPhotoCaptureDelegates[photoCaptureProcessor.requestedPhotoSettings.uniqueID] = nil
-        }
-        
-        DispatchQueue.main.async {
-          completion?()
+          
+          if self.inProgressPhotoCaptureDelegates.count == 0 {
+            DispatchQueue.main.async {
+              completion?()
+            }
+          }
         }
       })
       
