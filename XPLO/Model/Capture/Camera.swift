@@ -335,7 +335,7 @@ class Camera : NSObject {
      */
     if let reasonIntegerValue = notification.userInfo?[AVCaptureSessionInterruptionReasonKey] as? Int,
       let reason = AVCaptureSession.InterruptionReason(rawValue: reasonIntegerValue) {
-      print("Capture session was interrupted with reason \(reason)")
+      print("Capture session was interrupted with reason \(reason) - \(reason.rawValue)")
       DispatchQueue.main.async {
         self.delegate?.camera(self, sessionInterrupted: reason)
       }

@@ -60,7 +60,7 @@ class CameraViewController: UIViewController {
     super.viewWillDisappear(animated)
   }
   
-  //MARK: UIGestureRecognizer
+  // MARK: UIGestureRecognizer
   
   @objc func panGestureRecognized(_ panGestureRecognizer: UIPanGestureRecognizer) {
     let velocity = panGestureRecognizer.velocity(in: panGestureRecognizer.view)
