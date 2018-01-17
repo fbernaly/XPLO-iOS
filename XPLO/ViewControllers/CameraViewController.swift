@@ -158,12 +158,20 @@ class CameraViewController: UIViewController {
   // MARK: Sample
   
   func showSamples() {
-    let samples = ["sample00", "sample01", "sample02"]
+    let key = "xplo_sample"
+    if let saved = UserDefaults.standard.object(forKey: key) as? Bool,
+      saved {
+      self.albumButton.isEnabled = true
+      self.performSegue(withIdentifier: "photoAlbum", sender: self)
+      return
+    }
+    let samples = ["sample01"]
     var count = 0
     for sample in samples {
       self.save(name: sample, completion: {
         count += 1
         if count == samples.count {
+          UserDefaults.standard.set(true, forKey: key)
           self.albumButton.isEnabled = true
           self.performSegue(withIdentifier: "photoAlbum", sender: self)
         }
@@ -178,7 +186,7 @@ class CameraViewController: UIViewController {
         return
     }
     
-    let photoSettings = AVCapturePhotoSettings()
+    let photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
     photoSettings.isHighResolutionPhotoEnabled = true
     photoSettings.isDepthDataDeliveryEnabled = true
     photoSettings.embedsDepthDataInPhoto = true

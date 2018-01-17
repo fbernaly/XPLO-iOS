@@ -487,8 +487,8 @@ class Camera : NSObject {
     sessionQueue.async {
       var photoSettings = AVCapturePhotoSettings()
       // Capture HEIF photo when supported, with flash set to auto and high resolution photo enabled.
-      if  self.photoOutput.availablePhotoCodecTypes.contains(.hevc) {
-        photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+      if  self.photoOutput.availablePhotoCodecTypes.contains(.jpeg) {
+        photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
       }
       
       if let videoDeviceInput = self.videoDeviceInput,
