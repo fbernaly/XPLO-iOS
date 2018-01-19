@@ -36,6 +36,7 @@ class CameraViewController: UIViewController {
     cameraButton.isEnabled = false
     photoButton.isEnabled = false
     flashButton.isEnabled = false
+    displayModeButton.isEnabled = false
     
     camera.delegate = self
     camera.setup()
@@ -49,8 +50,6 @@ class CameraViewController: UIViewController {
     let pinchGestureRecognizer = UIPinchGestureRecognizer(target: self,
                                                           action: #selector(CameraViewController.pinchGestureRecognizer(_:)))
     view.addGestureRecognizer(pinchGestureRecognizer)
-    
-    displayModeButtonTapped(displayModeButton)
   }
   
   override func viewWillAppear(_ animated: Bool) {
@@ -90,6 +89,7 @@ class CameraViewController: UIViewController {
     flashButton.isEnabled = false
     cameraButton.isEnabled = false
     photoButton.isEnabled = false
+    displayModeButton.isEnabled = false
     camera.toggleCaptureDevice()
   }
   
@@ -263,9 +263,12 @@ extension CameraViewController: CameraDelegate {
     let isSessionRunning = camera.isSessionRunning
     self.albumButton.isEnabled = isSessionRunning
     self.flashButton.isEnabled = isSessionRunning
+    self.displayModeButton.isEnabled = isSessionRunning
     // Only enable the ability to change camera if the device has more than one camera.
     self.cameraButton.isEnabled = isSessionRunning && self.camera.canToggleCaptureDevice
     self.photoButton.isEnabled = isSessionRunning
+    self.displayModeButton.isSelected = false
+    self.displayModeButtonTapped(self.displayModeButton)
   }
   
   func camera(_ camera: Camera, sessionInterrupted reason: AVCaptureSession.InterruptionReason) {
@@ -314,6 +317,7 @@ extension CameraViewController: CameraDelegate {
     self.flashButton.isEnabled = true
     self.cameraButton.isEnabled = true
     self.photoButton.isEnabled = true
+    self.displayModeButton.isEnabled = true
     self.setVirtualCameraOffset()
   }
   
